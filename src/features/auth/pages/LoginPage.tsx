@@ -1,14 +1,22 @@
 import { useState, type ChangeEvent, type SyntheticEvent } from 'react';
 import { useAuthStore } from '../../../store/useAuthStore';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Mail, Lock, Eye, EyeOff, UtensilsCrossed } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+
+// Accesos de test
+const DEMO_USERS = [
+  { email: 'admin@app.com',  pass: 'admin123',  role: 'Admin',   cls: 'bg-[#ffdad2] text-[#8b1900]' },
+  { email: 'cajero@app.com', pass: 'cajero123', role: 'Cajero',  cls: 'bg-[#dae2fd] text-[#3f465c]' },
+  { email: 'client@app.com', pass: 'client123', role: 'Cliente', cls: 'bg-[#d1fae5] text-[#065f46]' },
+];
 
 export const LoginPage = () => {
-  const [email,       setEmail]       = useState('');
-  const [password,    setPassword]    = useState('');
-  const [showPass,    setShowPass]    = useState(false);
-  const [error,       setError]       = useState('');
-  const [isLoading,   setIsLoading]   = useState(false);
+  const [email,     setEmail]     = useState('');
+  const [password,  setPassword]  = useState('');
+  const [showPass,  setShowPass]  = useState(false);
+  const [remember,  setRemember]  = useState(false);
+  const [error,     setError]     = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuthStore();
   const navigate  = useNavigate();
 
@@ -38,58 +46,70 @@ export const LoginPage = () => {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4"
+      className="min-h-screen flex flex-col"
       style={{
-        background: 'radial-gradient(circle at 0% 0%, #fff0ed 0%, #fff8f6 50%, #fffbff 100%)',
+        backgroundImage: [
+          'linear-gradient(rgba(40,24,20,0.50), rgba(40,24,20,0.50))',
+          'url(https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=1920&q=80)',
+        ].join(', '),
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
       }}
     >
-      <main className="w-full max-w-[440px]">
-
-        {/* ── Brand header ── */}
-        <div className="text-center mb-10">
-          <div className="flex items-center justify-center mb-3">
-            <div className="w-14 h-14 bg-[#b22300] rounded-xl flex items-center justify-center shadow-lg shadow-[#b22300]/25">
-              <UtensilsCrossed className="w-7 h-7 text-white" />
-            </div>
-          </div>
-          <h1 className="text-3xl font-black text-[#b22300] tracking-tight">FoodStore</h1>
-          <p className="text-[#5c403a] text-sm mt-1">Portal de acceso</p>
+      {/* TopBar */}
+      <header className="fixed top-0 left-0 w-full z-50 bg-[#fff8f6]/80 backdrop-blur-md shadow-sm">
+        <div className="flex justify-between items-center px-4 h-16 max-w-[1280px] mx-auto">
+          <span className="text-2xl font-black text-[#b22300]">FoodStore</span>
         </div>
+      </header>
 
-        {/* ── Card ── */}
-        <div className="bg-white rounded-xl border border-[#e5beb5]/40 shadow-[0_4px_20px_rgba(15,23,42,0.08)] p-10">
-          <h2 className="font-bold text-[#281814] text-lg mb-1">Bienvenido de nuevo</h2>
-          <p className="text-[#5c403a] text-sm mb-6">Ingresá tus credenciales para continuar.</p>
+      {/* Centered glass panel */}
+      <main className="flex-grow flex items-center justify-center pt-16 px-4 py-10">
+        <div
+          className="w-full max-w-[480px] rounded-xl shadow-lg border border-white/20 p-10 my-10"
+          style={{
+            backdropFilter: 'blur(12px)',
+            backgroundColor: 'rgba(255,248,246,0.88)',
+          }}
+        >
+          {/* Heading */}
+          <div className="text-center mb-10">
+            <h1 className="text-[32px] font-bold leading-[1.2] tracking-[-0.01em] text-[#281814] mb-1">
+              Bienvenido de nuevo
+            </h1>
+            <p className="text-sm text-[#5c403a]">Inicia sesión para descubrir nuevos sabores</p>
+          </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-6">
 
             {/* Email */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-widest text-[#5c403a]" htmlFor="login-email">
-                Email
+              <label className="block text-[12px] font-bold uppercase tracking-[0.05em] text-[#5c403a] px-1" htmlFor="login-email">
+                Correo Electrónico
               </label>
               <div className="relative group">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5c403a]/50 group-focus-within:text-[#b22300] transition-colors" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#907068] group-focus-within:text-[#b22300] transition-colors" />
                 <input
                   id="login-email"
                   type="email"
                   value={email}
                   onChange={(e: ChangeEvent<HTMLInputElement>) => { setEmail(e.target.value); setError(''); }}
-                  placeholder="tu@email.com"
+                  placeholder="ejemplo@foodstore.com"
                   disabled={isLoading}
                   autoComplete="email"
-                  className="block w-full pl-10 pr-3 py-3 bg-[#fff8f6] border border-[#e5beb5] rounded-lg text-sm text-[#281814] placeholder:text-[#5c403a]/40 focus:outline-none focus:ring-2 focus:ring-[#b22300]/20 focus:border-[#b22300] transition-all"
+                  className="w-full pl-10 pr-4 py-3 bg-white border border-[#e5beb5] rounded-lg text-base text-[#281814] placeholder:text-[#5c403a]/40 focus:outline-none focus:ring-2 focus:ring-[#b22300]/30 focus:border-[#b22300] transition-all"
                 />
               </div>
             </div>
 
             {/* Password */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-widest text-[#5c403a]" htmlFor="login-password">
+              <label className="block text-[12px] font-bold uppercase tracking-[0.05em] text-[#5c403a] px-1" htmlFor="login-password">
                 Contraseña
               </label>
               <div className="relative group">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5c403a]/50 group-focus-within:text-[#b22300] transition-colors" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#907068] group-focus-within:text-[#b22300] transition-colors" />
                 <input
                   id="login-password"
                   type={showPass ? 'text' : 'password'}
@@ -98,82 +118,96 @@ export const LoginPage = () => {
                   placeholder="••••••••"
                   disabled={isLoading}
                   autoComplete="current-password"
-                  className="block w-full pl-10 pr-10 py-3 bg-[#fff8f6] border border-[#e5beb5] rounded-lg text-sm text-[#281814] placeholder:text-[#5c403a]/40 focus:outline-none focus:ring-2 focus:ring-[#b22300]/20 focus:border-[#b22300] transition-all"
+                  className="w-full pl-10 pr-12 py-3 bg-white border border-[#e5beb5] rounded-lg text-base text-[#281814] placeholder:text-[#5c403a]/40 focus:outline-none focus:ring-2 focus:ring-[#b22300]/30 focus:border-[#b22300] transition-all"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPass((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5c403a]/50 hover:text-[#b22300] transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#907068] hover:text-[#b22300] transition-colors"
+                  aria-label={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 >
-                  {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPass ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
 
+            {/* Recordarme + ¿Olvidaste? */}
+            <div className="flex items-center justify-between py-1">
+              <label className="flex items-center gap-2 cursor-pointer group select-none">
+                <input
+                  type="checkbox"
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+                  className="w-4 h-4 rounded border-[#e5beb5] text-[#b22300] focus:ring-[#b22300]"
+                />
+                <span className="text-sm text-[#5c403a] group-hover:text-[#281814] transition-colors">
+                  Recordarme
+                </span>
+              </label>
+              <button type="button" className="text-sm text-[#b22300] font-bold hover:underline">
+                ¿Olvidaste tu contraseña?
+              </button>
+            </div>
+
             {/* Error */}
             {error && (
-              <p className="text-[#ba1a1a] text-xs font-bold">{error}</p>
+              <p className="text-[#ba1a1a] text-sm font-bold">{error}</p>
             )}
 
             {/* Submit */}
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-[#b22300] hover:bg-[#da3711] text-white font-bold py-3 rounded-lg shadow-md active:scale-[0.98] transition-all flex items-center justify-center gap-2 group disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full py-4 bg-[#b22300] text-white font-semibold text-lg rounded-lg shadow-md hover:bg-[#da3711] hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center"
             >
               {isLoading ? (
-                <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+                <span className="flex items-center gap-2">
+                  <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+                  Cargando...
+                </span>
               ) : (
-                <>
-                  <span className="text-base">Ingresar</span>
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </>
+                'Iniciar Sesión'
               )}
             </button>
           </form>
 
-          {/* ── Usuarios de demo ── */}
-          <div className="mt-8 pt-6 border-t border-[#e5beb5]/60">
-            <p className="text-[10px] font-black uppercase tracking-widest text-[#5c403a]/50 mb-3">
+          {/* Separador */}
+          <div className="relative flex items-center my-8">
+            <div className="flex-grow border-t border-[#e5beb5]" />
+            <span className="flex-shrink mx-4 text-[12px] font-bold uppercase tracking-[0.05em] text-[#907068]">
               Accesos de prueba
-            </p>
-            <div className="flex flex-col gap-2">
-              {[
-                { email: 'admin@app.com',  pass: 'admin123',  role: 'Admin',   bg: 'bg-[#ffdad2] text-[#8b1900] border-[#ffdad2]' },
-                { email: 'cajero@app.com', pass: 'cajero123', role: 'Cajero',  bg: 'bg-[#dae2fd] text-[#3f465c] border-[#dae2fd]' },
-                { email: 'client@app.com', pass: 'client123', role: 'Cliente', bg: 'bg-[#d1fae5] text-[#065f46] border-[#d1fae5]' },
-              ].map((u) => (
-                <button
-                  key={u.email}
-                  type="button"
-                  onClick={() => quickLogin(u.email, u.pass)}
-                  className={`flex items-center justify-between px-4 py-2.5 rounded-xl border text-xs font-bold transition-all hover:scale-[1.02] active:scale-95 ${u.bg}`}
-                >
-                  <span className="font-mono">{u.email}</span>
-                  <span className="text-[9px] font-black uppercase tracking-widest opacity-70">{u.role}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="mt-5 flex justify-between items-center px-2">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[#5c403a]/60">
-              Server: Online
             </span>
+            <div className="flex-grow border-t border-[#e5beb5]" />
           </div>
-          <span className="text-[10px] font-bold text-[#5c403a]/40">v2.4.0</span>
+
+          {/* Demo users */}
+          <div className="flex flex-col gap-2">
+            {DEMO_USERS.map((u) => (
+              <button
+                key={u.email}
+                type="button"
+                onClick={() => quickLogin(u.email, u.pass)}
+                className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all hover:scale-[1.02] active:scale-95 ${u.cls}`}
+              >
+                <span className="font-mono">{u.email}</span>
+                <span className="text-[9px] font-black uppercase tracking-widest opacity-70">
+                  {u.role}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Crear cuenta */}
+          <div className="mt-8 text-center">
+            <p className="text-sm text-[#5c403a]">
+              ¿No tenés una cuenta?{' '}
+              <button type="button" className="text-[#b22300] font-bold hover:underline">
+                Regístrate gratis
+              </button>
+            </p>
+          </div>
         </div>
       </main>
-
-      {/* Elemento decorativo de fondo */}
-      <div className="hidden lg:block fixed bottom-0 right-0 w-[35%] h-[55%] -mr-16 -mb-16 opacity-[0.06] pointer-events-none select-none">
-        <div className="w-full h-full rounded-full"
-             style={{ background: 'radial-gradient(circle, #b22300 0%, transparent 70%)' }} />
-      </div>
     </div>
   );
 };
