@@ -1,6 +1,6 @@
-import { Navigate, Outlet } from "react-router-dom";
-import { useAuthStore } from "../store/useAuthStore";
-import type { IRole } from "../shared/types/auth.types";
+import { Navigate, Outlet } from 'react-router-dom';
+import { useAuthStore } from '../store/useAuthStore';
+import type { IRole } from '../shared/types/auth.types';
 
 type Props = {
   allowedRoles: IRole[];
@@ -9,14 +9,16 @@ type Props = {
 export const ProtectedRoute = ({ allowedRoles }: Props) => {
   const { user, hasRole } = useAuthStore();
 
-  // si no inició sesión → al login
+  // Si no inició sesión -> al login
   if (!user) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/login" replace />;
   }
-  // si no tiene el rol necesario → forbidden
+
+  // Si no tiene ninguno de los roles requeridos -> forbidden
   if (!hasRole(...allowedRoles)) {
-    return <Navigate to="/forbidden" />;
+    return <Navigate to="/forbidden" replace />;
   }
-  // cumple → renderiza la ruta hija
+
+  // Cumple con autenticación y permisos -> renderiza la ruta hija
   return <Outlet />;
 };

@@ -1,42 +1,41 @@
 import React from 'react';
 import { Loader2, AlertCircle, Inbox } from 'lucide-react';
-import { Button } from './Button';
-
-/**
- * ESTE ARCHIVO ES CLAVE: Acá guardo los estados de la pantalla.
- * Me sirve para que el usuario sepa qué está pasando (si carga, si falló o si no hay nada).
- */
 
 export const LoadingState: React.FC = () => (
-  <div className="flex flex-col items-center justify-center py-20 gap-4 animate-in fade-in duration-500">
-    {/* El 'animate-spin' hace que el icono de Lucide gire infinitamente. */}
-    <Loader2 className="w-12 h-12 text-brand animate-spin" />
-    <p className="text-cocoa font-black uppercase italic tracking-widest text-sm">Cargando delicias...</p>
+  <div className="flex flex-col items-center justify-center py-24 gap-4 min-h-[50vh]">
+    <Loader2 className="w-10 h-10 text-[#b22300] animate-spin" />
+    <p className="text-[#5c403a] text-xs font-bold uppercase tracking-widest">
+      Cargando...
+    </p>
   </div>
 );
 
-export const ErrorState: React.FC<{ message?: string; onRetry?: () => void }> = ({ 
-  message = "Hubo un error al conectar con el servidor.", 
-  onRetry 
+export const ErrorState: React.FC<{ message?: string; onRetry?: () => void }> = ({
+  message = 'No se pudo conectar con el servidor.',
+  onRetry,
 }) => (
-  <div className="flex flex-col items-center justify-center py-20 gap-4 bg-red-500/5 rounded-3xl border-2 border-red-500/20">
-    <AlertCircle className="w-16 h-16 text-red-500" />
-    <div className="text-center">
-      <h3 className="text-xl font-black text-red-600 uppercase italic">¡Ups! Algo salió mal</h3>
-      <p className="text-red-400 font-bold italic text-sm">{message}</p>
+  <div className="flex flex-col items-center justify-center py-24 gap-4 min-h-[50vh]">
+    <div className="w-16 h-16 rounded-full bg-[#ffdad6] flex items-center justify-center">
+      <AlertCircle className="w-8 h-8 text-[#ba1a1a]" />
     </div>
-    {/* El botón de reintentar llama a 'refetch()' de TanStack Query. Muy útil. */}
+    <div className="text-center">
+      <h3 className="font-black text-[#281814] text-lg mb-1">Algo salió mal</h3>
+      <p className="text-[#5c403a] text-sm">{message}</p>
+    </div>
     {onRetry && (
-      <Button variant="danger" onClick={onRetry} className="mt-2">
-        Reintentar conexión
-      </Button>
+      <button
+        onClick={onRetry}
+        className="px-5 py-2.5 bg-[#ba1a1a] text-white text-sm font-bold rounded-lg hover:bg-red-700 transition-all"
+      >
+        Reintentar
+      </button>
     )}
   </div>
 );
 
 export const EmptyState: React.FC<{ message: string }> = ({ message }) => (
-  <div className="flex flex-col items-center justify-center py-20 gap-4 bg-canvas/30 rounded-3xl border-2 border-cocoa/10 border-dashed">
-    <Inbox className="w-16 h-16 text-cocoa/30" />
-    <p className="text-cocoa/60 font-black uppercase italic tracking-widest text-sm">{message}</p>
+  <div className="flex flex-col items-center justify-center py-24 gap-4 min-h-[30vh] rounded-xl border-2 border-dashed border-[#e5beb5] bg-[#fff0ed]/40">
+    <Inbox className="w-12 h-12 text-[#b22300]/20" />
+    <p className="text-[#5c403a] text-xs font-bold uppercase tracking-widest">{message}</p>
   </div>
 );

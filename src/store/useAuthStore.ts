@@ -1,31 +1,36 @@
-import { create } from "zustand";
-import type { IRole, IUser } from "../shared/types/auth.types";
-import { authService } from "../features/auth/services/auth";
+import { create } from 'zustand';
+import type { IRole, IUser } from '../shared/types/auth.types';
+import { authService } from '../features/auth/services/auth';
 
 interface AuthState {
   user: IUser | null;
-  login: (email: string) => Promise<IUser | null>;
-  logout: VoidFunction;
+  login: (email: string, password: string) => Promise<IUser | null>;
+  logout: () => Promise<void>;
   hasRole: (...roles: IRole[]) => boolean;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
-  login: async (email) => {
+
+  login: async (email, password) => {
     try {
-      const user = await authService.login(email);
+      const user = await authService.login(email, password);
       set({ user });
       return user;
     } catch {
       return null;
     }
   },
-  logout: () => {
+
+  logout: async () => {
+    await authService.logout();
     set({ user: null });
   },
+
+  // Verifica si el usuario tiene al menos uno de los roles indicados
   hasRole: (...roles) => {
     const { user } = get();
-    const found = user !== null && roles.includes(user.role);
-    return found;
+    if (!user) return false;
+    return roles.some((r) => user.roles.includes(r));
   },
 }));

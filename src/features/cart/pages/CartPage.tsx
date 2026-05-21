@@ -1,31 +1,32 @@
 import React, { useState } from 'react';
 import { useCartStore } from '../store/useCartStore';
-import { Button } from '../../../shared/ui/Button';
 import { ordersService } from '../../orders/services/orders';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, ShoppingBag, ArrowLeft, Minus, Plus } from 'lucide-react';
+import { Trash2, ShoppingBag, ArrowLeft, Minus, Plus, ArrowRight, Info } from 'lucide-react';
 
 export const CartPage: React.FC = () => {
-  const items = useCartStore(state => state.items);
-  const updateQuantity = useCartStore(state => state.updateQuantity);
-  const removeItem = useCartStore(state => state.removeItem);
-  const clear = useCartStore(state => state.clear);
-  const getTotal = useCartStore(state => state.getTotal);
+  const items        = useCartStore((s) => s.items);
+  const updateQty    = useCartStore((s) => s.updateQuantity);
+  const removeItem   = useCartStore((s) => s.removeItem);
+  const clear        = useCartStore((s) => s.clear);
+  const getTotal     = useCartStore((s) => s.getTotal);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error,     setError]     = useState('');
   const navigate = useNavigate();
+
+  const subtotal = getTotal();
 
   const handleConfirm = async () => {
     if (items.length === 0) return;
-
     setIsLoading(true);
     setError('');
 
     const payload = {
-      metodo_pago: 'efectivo',
+      forma_pago: 'EFECTIVO',
       notas: null,
-      items: items.map(i => ({
-        producto_id: i.producto.id,
+      direccion_entrega_id: null,
+      items: items.map((i) => ({
+        producto_id: i.producto.id!,
         cantidad: i.cantidad,
         precio_unitario: i.producto.precio_base,
       })),
@@ -44,104 +45,185 @@ export const CartPage: React.FC = () => {
 
   if (items.length === 0) {
     return (
-      <div className="max-w-4xl mx-auto py-20 px-4 flex flex-col items-center gap-6">
-        <ShoppingBag className="w-20 h-20 text-cocoa/30" />
-        <h1 className="text-2xl font-black text-brand-active uppercase italic">Tu carrito está vacío</h1>
-        <p className="text-cocoa/60 font-bold italic">Agregá productos para continuar.</p>
-        <Button onClick={() => navigate('/products')} variant="secondary" className="flex items-center gap-2">
+      <div className="min-h-screen bg-[#fff8f6] flex flex-col items-center justify-center gap-6 px-4">
+        <div className="w-20 h-20 rounded-full bg-[#ffe9e4] flex items-center justify-center">
+          <ShoppingBag className="w-10 h-10 text-[#b22300]/40" />
+        </div>
+        <h1 className="text-2xl font-black text-[#281814]">Tu carrito está vacío</h1>
+        <p className="text-[#5c403a] text-sm">Agregá productos para continuar.</p>
+        <button
+          onClick={() => navigate('/products')}
+          className="flex items-center gap-2 px-6 py-3 bg-[#b22300] text-white font-bold rounded-lg hover:bg-[#da3711] transition-all"
+        >
           <ArrowLeft className="w-4 h-4" />
           Ver productos
-        </Button>
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-12 px-4">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-black text-brand-active uppercase italic">Carrito</h1>
-        <button
-          onClick={clear}
-          className="text-xs text-red-400 font-black uppercase italic hover:text-red-600 transition-colors flex items-center gap-1"
-        >
-          <Trash2 className="w-3 h-3" />
-          Vaciar carrito
-        </button>
-      </div>
+    <div className="min-h-screen bg-[#fff8f6]">
+      <main className="pt-20 pb-16 max-w-[1280px] mx-auto px-4 md:px-10">
 
-      <div className="flex flex-col gap-4">
-        {items.map(it => (
-          <div key={it.producto.id} className="card p-4 flex items-center gap-4">
-            <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-black/20">
-              {it.producto.imagenes_url?.[0] ? (
-                <img
-                  src={it.producto.imagenes_url[0]}
-                  alt={it.producto.nombre}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-white/20 text-xs font-bold italic">Sin img</div>
-              )}
-            </div>
+        <div className="flex flex-col lg:flex-row gap-10">
 
-            <div className="flex-1 min-w-0">
-              <div className="font-black text-white text-lg leading-tight truncate">{it.producto.nombre}</div>
-              <div className="text-cocoa/70 text-sm italic">${it.producto.precio_base.toLocaleString()} c/u</div>
-            </div>
-
-            <div className="flex items-center gap-2 bg-black/10 rounded-2xl border border-white/10 p-1">
+          {/* ── Lista de items ── */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-3xl font-black text-[#281814] tracking-tight">
+                Revisá tu Pedido
+              </h1>
               <button
-                onClick={() => updateQuantity(it.producto.id!, it.cantidad - 1)}
-                className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all"
+                onClick={clear}
+                className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-[#ba1a1a] hover:text-red-700 transition-colors"
               >
-                <Minus className="w-3 h-3" />
-              </button>
-              <span className="w-8 text-center font-black text-white">{it.cantidad}</span>
-              <button
-                onClick={() => updateQuantity(it.producto.id!, it.cantidad + 1)}
-                className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all"
-              >
-                <Plus className="w-3 h-3" />
+                <Trash2 className="w-3.5 h-3.5" />
+                Vaciar
               </button>
             </div>
 
-            <div className="w-24 text-right font-black text-canvas text-lg">
-              ${(it.producto.precio_base * it.cantidad).toLocaleString()}
+            <div className="space-y-4">
+              {items.map((it) => (
+                <div
+                  key={it.producto.id}
+                  className="bg-white rounded-xl border border-[#e5beb5]/40 shadow-[0_4px_20px_rgba(178,35,0,0.04)] p-5 flex flex-col sm:flex-row items-center gap-5"
+                >
+                  {/* Imagen */}
+                  <div className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 bg-[#ffe9e4]">
+                    {it.producto.imagenes_url?.[0] ? (
+                      <img
+                        src={it.producto.imagenes_url[0]}
+                        alt={it.producto.nombre}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[#b22300]/20 text-xs font-bold">
+                        Sin img
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Nombre */}
+                  <div className="flex-1 text-center sm:text-left min-w-0">
+                    <h3 className="font-semibold text-[#281814] text-base leading-snug truncate">
+                      {it.producto.nombre}
+                    </h3>
+                    <p className="text-[#5c403a] text-sm">
+                      ${it.producto.precio_base.toLocaleString('es-AR')} c/u
+                    </p>
+                  </div>
+
+                  {/* Control cantidad */}
+                  <div className="flex items-center gap-2 bg-[#ffe9e4] rounded-full px-2 py-1">
+                    <button
+                      onClick={() => updateQty(it.producto.id!, it.cantidad - 1)}
+                      className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[#fadcd5] active:scale-90 transition-all"
+                    >
+                      <Minus className="w-3 h-3 text-[#b22300]" />
+                    </button>
+                    <span className="w-6 text-center font-black text-[#281814]">
+                      {it.cantidad}
+                    </span>
+                    <button
+                      onClick={() => updateQty(it.producto.id!, it.cantidad + 1)}
+                      className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[#fadcd5] active:scale-90 transition-all"
+                    >
+                      <Plus className="w-3 h-3 text-[#b22300]" />
+                    </button>
+                  </div>
+
+                  {/* Precio + eliminar */}
+                  <div className="flex items-center gap-3 min-w-[110px] justify-end">
+                    <div className="text-right">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-[#5c403a] mb-0.5">
+                        Precio
+                      </p>
+                      <p className="font-black text-[#b22300] text-lg">
+                        ${(it.producto.precio_base * it.cantidad).toLocaleString('es-AR')}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => removeItem(it.producto.id!)}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg text-[#5c403a]/50 hover:bg-[#ffdad6] hover:text-[#ba1a1a] transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
 
+            {/* Seguir comprando */}
             <button
-              onClick={() => removeItem(it.producto.id!)}
-              className="w-8 h-8 flex items-center justify-center rounded-xl bg-red-500/10 hover:bg-red-500/30 text-red-400 hover:text-red-300 transition-all"
+              onClick={() => navigate('/products')}
+              className="mt-6 flex items-center gap-2 text-sm font-semibold text-[#5c403a] hover:text-[#b22300] transition-colors"
             >
-              <Trash2 className="w-4 h-4" />
+              <ArrowLeft className="w-4 h-4" />
+              Seguir comprando
             </button>
           </div>
-        ))}
-      </div>
 
-      <div className="mt-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 bg-white/10 rounded-3xl border-2 border-cocoa/20 backdrop-blur-md">
-        <div className="flex flex-col">
-          <span className="text-cocoa/60 text-[10px] font-black uppercase tracking-widest italic">Total a pagar</span>
-          <span className="text-4xl font-black text-brand-active italic">${getTotal().toLocaleString()}</span>
-        </div>
+          {/* ── Sidebar Order Summary ── */}
+          <aside className="w-full lg:w-[380px] flex-shrink-0">
+            <div className="bg-white rounded-xl border border-[#e5beb5]/40 shadow-[0_4px_20px_rgba(15,23,42,0.08)] p-6 sticky top-20">
+              <h2 className="font-bold text-[#281814] text-lg mb-6">Resumen del Pedido</h2>
 
-        <div className="flex gap-3">
-          <Button variant="secondary" onClick={() => navigate('/products')} className="flex items-center gap-2">
-            <ArrowLeft className="w-4 h-4" />
-            Seguir comprando
-          </Button>
-          <Button onClick={handleConfirm} isLoading={isLoading} className="flex items-center gap-2">
-            <ShoppingBag className="w-4 h-4" />
-            Confirmar Pedido
-          </Button>
-        </div>
-      </div>
+              <div className="space-y-4 mb-6">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-[#5c403a]">Subtotal</span>
+                  <span className="font-semibold text-[#281814]">
+                    ${subtotal.toLocaleString('es-AR')}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-[#5c403a]">Envío</span>
+                  <span className="font-semibold text-[#281814]">A confirmar</span>
+                </div>
+                <div className="pt-4 border-t border-[#e5beb5]">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-[#281814] text-base">Total</span>
+                    <span className="font-black text-[#b22300] text-3xl tracking-tight">
+                      ${subtotal.toLocaleString('es-AR')}
+                    </span>
+                  </div>
+                </div>
+              </div>
 
-      {error && (
-        <div className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-400 font-black text-sm italic">
-          {error}
+              {/* Info */}
+              <div className="flex items-start gap-3 p-4 bg-[#ffe9e4] border border-[#b22300]/10 rounded-lg mb-4">
+                <Info className="w-4 h-4 text-[#b22300] flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-[#5c403a]">
+                  Tu pedido apoya a productores locales y prácticas sustentables.
+                </p>
+              </div>
+
+              {/* Error */}
+              {error && (
+                <div className="mb-4 p-3 bg-[#ffdad6] border border-[#ba1a1a]/20 rounded-lg text-xs font-bold text-[#ba1a1a]">
+                  {error}
+                </div>
+              )}
+
+              {/* Confirmar */}
+              <button
+                onClick={handleConfirm}
+                disabled={isLoading}
+                className="w-full bg-[#b22300] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#da3711] active:scale-[0.98] transition-all flex items-center justify-center gap-2 group shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isLoading ? (
+                  <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+                ) : (
+                  <>
+                    Confirmar Pedido
+                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
+              </button>
+            </div>
+          </aside>
         </div>
-      )}
+      </main>
     </div>
   );
 };

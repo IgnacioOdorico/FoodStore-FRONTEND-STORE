@@ -9,57 +9,48 @@ interface ModalProps {
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 }
 
-/**
- * ESTO ES UN COMPONENTE REUTILIZABLE: Lo creamos para no tener que 
- * copiar y pegar el código del fondo oscuro y el encabezado en cada modal.
- * Así mantengo la consistencia visual en toda la app.
- */
-export const Modal: React.FC<ModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  title, 
+const MAX_WIDTH = {
+  sm:  'max-w-sm',
+  md:  'max-w-md',
+  lg:  'max-w-lg',
+  xl:  'max-w-xl',
+  '2xl': 'max-w-2xl',
+};
+
+export const Modal: React.FC<ModalProps> = ({
+  isOpen,
+  onClose,
+  title,
   children,
-  maxWidth = 'md' 
+  maxWidth = 'md',
 }) => {
-  // Si el modal no está abierto, no renderizo NADA.
   if (!isOpen) return null;
 
-  // Clases dinámicas para manejar distintos anchos (el de productos es más ancho que el de categorías)
-  const maxWidthClasses = {
-    sm: 'max-w-sm',
-    md: 'max-w-md',
-    lg: 'max-w-lg',
-    xl: 'max-w-xl',
-    '2xl': 'max-w-2xl',
-  };
-
   return (
-    // 'fixed inset-0' ocupa toda la pantalla y el z-50 lo pone por encima de todo.
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* OVERLAY: Es el fondo oscuro con el efecto de blur. Al hacer click, se cierra el modal. */}
-      <div 
-        className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-200" 
-        onClick={onClose} 
+      {/* Overlay */}
+      <div
+        className="absolute inset-0 bg-[#281814]/40 backdrop-blur-sm"
+        onClick={onClose}
       />
-      
-      {/* CONTENEDOR: El 'card' principal con sombra y bordes Cocoa. */}
-      <div className={`relative card w-full ${maxWidthClasses[maxWidth]} animate-in fade-in zoom-in duration-200 shadow-2xl border-2 border-cocoa/20 max-h-[90vh] flex flex-col !p-0`}>
-        
-        {/* HEADER: Color Cocoa Brown con tipografía Black/Italic. Es el sello del branding. */}
-        <div className="flex justify-between items-center p-6 bg-cocoa border-b-2 border-cocoa/20 rounded-t-2xl sticky top-0 z-10">
-          <h2 className="text-xl font-black text-white uppercase tracking-tighter italic">
-            {title}
-          </h2>
-          <button 
-            onClick={onClose} 
-            className="text-white/40 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg"
+
+      {/* Contenedor */}
+      <div
+        className={`relative bg-white w-full ${MAX_WIDTH[maxWidth]} rounded-xl border border-[#e5beb5]/40 shadow-[0_8px_40px_rgba(15,23,42,0.15)] max-h-[90vh] flex flex-col overflow-hidden`}
+      >
+        {/* Header */}
+        <div className="flex justify-between items-center px-6 py-4 border-b border-[#e5beb5] flex-shrink-0">
+          <h2 className="font-black text-[#281814] text-lg">{title}</h2>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-[#5c403a]/50 hover:bg-[#ffe9e4] hover:text-[#b22300] transition-all"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* CONTENIDO: Con scroll interno para que el modal no se escape si el formulario es muy largo. */}
-        <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-cocoa/20 scrollbar-track-transparent">
+        {/* Contenido */}
+        <div className="flex-1 overflow-y-auto p-6">
           {children}
         </div>
       </div>

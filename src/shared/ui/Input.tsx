@@ -1,30 +1,28 @@
 import React from 'react';
 
-// Lo mismo que el botón: heredo todo del <input> nativo de HTML.
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
-  error?: string; // Puse esto para mostrar mensajes de validación debajo del input.
+  error?: string;
 }
 
 export const Input: React.FC<InputProps> = ({ label, error, className = '', ...props }) => {
   return (
     <div className="flex flex-col gap-1.5 w-full">
-      {/* LABEL: Usamos tipografía Black e Itálica con color Cocoa para que se vea artesanal. */}
-      <label className="text-sm font-black text-cocoa uppercase tracking-widest italic">
+      <label className="text-xs font-bold uppercase tracking-widest text-[#5c403a]">
         {label}
       </label>
-      
+
       <input
         {...props}
-        // 'input-field' es la clase global que creamos en index.css para unificar el look.
-        className={`input-field ${error ? 'border-red-500 bg-red-500/5' : ''} ${className}`}
+        className={`w-full px-4 py-3 bg-[#fff8f6] border rounded-lg text-sm text-[#281814] placeholder:text-[#5c403a]/40 focus:outline-none focus:ring-2 transition-all ${
+          error
+            ? 'border-[#ba1a1a] bg-[#ffdad6]/20 focus:ring-[#ba1a1a]/20 focus:border-[#ba1a1a]'
+            : 'border-[#e5beb5] focus:ring-[#b22300]/20 focus:border-[#b22300]'
+        } ${className}`}
       />
-      
-      {/* ERROR: Si hay un error, lo muestro en rojo bien llamativo. */}
+
       {error && (
-        <span className="text-[10px] text-red-500 font-black uppercase tracking-tighter italic animate-in slide-in-from-top-1">
-          {error}
-        </span>
+        <span className="text-[11px] text-[#ba1a1a] font-bold">{error}</span>
       )}
     </div>
   );
