@@ -1,27 +1,31 @@
-const BASE_URL = 'http://localhost:8000';
+import axios from 'axios';
 
-// Función para simular retraso de red (útil para el video del parcial)
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+/**
+ * Instancia de axios configurada para el backend de FoodStore.
+ *
+ * - baseURL apunta a VITE_API_URL (o localhost:8000 por defecto) + /api/v1
+ * - withCredentials: true para enviar la cookie de sesión automáticamente
+ * - Content-Type: application/json por defecto
+ *
+ * Interceptor de response:
+ *   Normaliza todos los errores del servidor en un único Error estándar,
+ *   extrayendo el campo `detail` de FastAPI cuando está disponible.
+ */
+export const api = axios.create({
+  baseURL: (import.meta.env.VITE_API_URL ?? 'http://localhost:8000') + '/api/v1',
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
-export async function apiFetch(endpoint: string, options: RequestInit = {}) {
-  // CLAVE UN DELAY DE 1.5 SEGUNDOS PARA QUE SE VEA EL LOADING EN EL VIDEO XDDDD
-  await delay(1500);
-
-  const response = await fetch(`${BASE_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || 'Error en la petición');
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const message =
+      error.response?.data?.detail ??
+      error.message ??
+      'Error en la petición';
+    return Promise.reject(new Error(message));
   }
-
-  // En DELETE (204 No Content), response.json() falla.
-  if (response.status === 204) return null;
-
-  return response.json();
-}
+);

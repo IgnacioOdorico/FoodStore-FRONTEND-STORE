@@ -1,23 +1,45 @@
-import { apiFetch } from '../../../shared/services/api';
-import type { IUser } from '../../../shared/types/auth.types';
+import { api } from '../../../shared/services/api';
 
-const MOCK_USERS: IUser[] = [
-  { id: 1, name: "Admin", email: "admin@app.com", role: "admin" },
-  { id: 2, name: "Empleado", email: "emp@app.com", role: "employee" },
-  { id: 3, name: "Cliente", email: "client@app.com", role: "client" },
-];
+export interface LoginResponse {
+  mensaje: string;
+  user_email: string;
+}
 
+export interface UserPublic {
+  id: number;
+  nombre: string;
+  apellido: string;
+  email: string;
+  celular: string;
+  roles: string[];
+  created_at: string;
+}
+
+/**
+ * Servicio de autenticación.
+ *
+ * El login usa application/x-www-form-urlencoded porque el backend de FastAPI
+ * implementa el flujo OAuth2 Password (form data). Pasamos URLSearchParams
+ * directamente a axios — él detecta el tipo y setea el Content-Type correcto.
+ *
+ * El resto de las rutas usan la instancia de axios con JSON por defecto.
+ */
 export const authService = {
-  login: async (email: string): Promise<IUser> => {
-    try {
-      return await apiFetch('/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email }),
-      }) as IUser;
-    } catch {
-      const mock = MOCK_USERS.find(u => u.email === email);
-      if (mock) return mock;
-      throw new Error('Credenciales inválidas');
-    }
+  login: (email: string, password: string): Promise<LoginResponse> => {
+    const params = new URLSearchParams();
+    params.append('username', email);
+    params.append('password', password);
+
+    return api
+      .post('/auth/token', params, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      })
+      .then(r => r.data);
   },
+
+  logout: (): Promise<{ mensaje: string }> =>
+    api.post('/auth/logout').then(r => r.data),
+
+  me: (): Promise<UserPublic> =>
+    api.get('/auth/me').then(r => r.data),
 };
