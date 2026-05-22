@@ -1,29 +1,31 @@
 import React from 'react';
+import { Loader2, AlertCircle, Inbox } from 'lucide-react';
 
 export const LoadingState: React.FC = () => (
-  <div className="flex flex-col items-center justify-center py-20 gap-4">
-    <span className="material-symbols-outlined text-5xl animate-spin" style={{ color: 'var(--color-primary)' }}>
-      progress_activity
-    </span>
-    <p className="text-sm font-extrabold uppercase tracking-widest" style={{ color: 'var(--color-outline)' }}>
+  <div className="flex flex-col items-center justify-center py-24 gap-4 min-h-[50vh]">
+    <Loader2 className="w-10 h-10 text-[#b22300] animate-spin" />
+    <p className="text-[#5c403a] text-xs font-bold uppercase tracking-widest">
       Cargando...
     </p>
   </div>
 );
 
 export const ErrorState: React.FC<{ message?: string; onRetry?: () => void }> = ({
-  message = 'Hubo un error al conectar con el servidor.',
+  message = 'No se pudo conectar con el servidor.',
   onRetry,
 }) => (
-  <div className="flex flex-col items-center justify-center py-20 gap-4 mx-5 rounded-xl p-6"
-    style={{ backgroundColor: 'var(--color-error-container)' }}>
-    <span className="material-symbols-outlined text-5xl" style={{ color: 'var(--color-error)' }}>error</span>
-    <p className="font-semibold text-center" style={{ color: 'var(--color-on-error-container)' }}>{message}</p>
+  <div className="flex flex-col items-center justify-center py-24 gap-4 min-h-[50vh]">
+    <div className="w-16 h-16 rounded-full bg-[#ffdad6] flex items-center justify-center">
+      <AlertCircle className="w-8 h-8 text-[#ba1a1a]" />
+    </div>
+    <div className="text-center">
+      <h3 className="font-black text-[#281814] text-lg mb-1">Algo salió mal</h3>
+      <p className="text-[#5c403a] text-sm">{message}</p>
+    </div>
     {onRetry && (
       <button
         onClick={onRetry}
-        className="px-6 py-2 rounded-full font-extrabold text-sm uppercase tracking-wide"
-        style={{ backgroundColor: 'var(--color-error)', color: 'var(--color-on-error)' }}
+        className="px-5 py-2.5 bg-[#ba1a1a] text-white text-sm font-bold rounded-lg hover:bg-red-700 transition-all"
       >
         Reintentar
       </button>
@@ -32,12 +34,8 @@ export const ErrorState: React.FC<{ message?: string; onRetry?: () => void }> = 
 );
 
 export const EmptyState: React.FC<{ message: string }> = ({ message }) => (
-  <div className="flex flex-col items-center justify-center py-20 gap-4">
-    <span className="material-symbols-outlined text-6xl" style={{ color: 'var(--color-outline-variant)' }}>
-      sentiment_dissatisfied
-    </span>
-    <p className="text-sm font-extrabold uppercase tracking-widest text-center" style={{ color: 'var(--color-outline)' }}>
-      {message}
-    </p>
+  <div className="flex flex-col items-center justify-center py-24 gap-4 min-h-[30vh] rounded-xl border-2 border-dashed border-[#e5beb5] bg-[#fff0ed]/40">
+    <Inbox className="w-12 h-12 text-[#b22300]/20" />
+    <p className="text-[#5c403a] text-xs font-bold uppercase tracking-widest">{message}</p>
   </div>
 );

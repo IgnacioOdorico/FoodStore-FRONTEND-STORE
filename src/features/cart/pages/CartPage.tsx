@@ -1,108 +1,61 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useMutation } from '@tanstack/react-query';
 import { useCartStore } from '../store/useCartStore';
 import { ordersService } from '../../orders/services/orders';
-import { authService } from '../../auth/services/auth';
+import { useNavigate } from 'react-router-dom';
+import { Trash2, ShoppingBag, ArrowLeft, Minus, Plus, ArrowRight, Info } from 'lucide-react';
 
-/**
- * CartPage — pantalla del carrito de compras.
- *
- * Estado del carrito: Zustand (useCartStore con persist en localStorage)
- *
- * Crear pedido: useMutation de TanStack Query.
- *   - mutationFn: llama a ordersService.create con el payload correcto del backend
- *   - onSuccess: limpia el carrito y navega a /orders
- *   - isPending: deshabilita el botón mientras procesa
- *   - error: muestra el mensaje de error si falla
- *
- * Payload enviado al backend (POST /api/v1/pedidos/):
- *   {
- *     detalles: [{ producto_id, cantidad }],
- *     forma_pago_codigo: 'EFECTIVO',
- *     notas: null,
- *   }
- */
 export const CartPage: React.FC = () => {
-  const items = useCartStore(state => state.items);
-  const updateQuantity = useCartStore(state => state.updateQuantity);
-  const removeItem = useCartStore(state => state.removeItem);
-  const clear = useCartStore(state => state.clear);
-  const getTotal = useCartStore(state => state.getTotal);
+  const items        = useCartStore((s) => s.items);
+  const updateQty    = useCartStore((s) => s.updateQuantity);
+  const removeItem   = useCartStore((s) => s.removeItem);
+  const clear        = useCartStore((s) => s.clear);
+  const getTotal     = useCartStore((s) => s.getTotal);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error,     setError]     = useState('');
   const navigate = useNavigate();
 
-  // Modal de login lazy — solo se muestra al intentar confirmar el pedido
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [loginLoading, setLoginLoading] = useState(false);
-  const [loginError, setLoginError] = useState('');
+  const subtotal = getTotal();
 
-  const { mutate: createOrder, isPending, error } = useMutation({
-    mutationFn: () =>
-      ordersService.create({
-        forma_pago_codigo: 'EFECTIVO',
-        notas: null,
-        detalles: items.map(i => ({
-          producto_id: i.producto.id!,
-          cantidad: i.cantidad,
-        })),
-      }),
-    onSuccess: () => {
-      clear();
-      navigate('/orders');
-    },
-  });
-
-  /**
-   * Al pulsar "Finalizar Compra":
-   * 1. Si ya está autenticado → crea el pedido directo.
-   * 2. Si no → muestra modal con credenciales demo precargadas.
-   */
   const handleConfirm = async () => {
     if (items.length === 0) return;
-    try {
-      await authService.me();
-      // Ya autenticado — crear pedido
-      createOrder();
-    } catch {
-      // No autenticado — mostrar modal de login
-      setLoginError('');
-      setShowLoginModal(true);
-    }
-  };
+    setIsLoading(true);
+    setError('');
 
-  /** Se llama desde el modal con las credenciales demo hardcodeadas */
-  const handleLoginAndOrder = async () => {
-    setLoginLoading(true);
-    setLoginError('');
+    const payload = {
+      forma_pago: 'EFECTIVO',
+      notas: null,
+      direccion_entrega_id: null,
+      items: items.map((i) => ({
+        producto_id: i.producto.id!,
+        cantidad: i.cantidad,
+        precio_unitario: i.producto.precio_base,
+      })),
+    };
+
     try {
-      await authService.login('juan@ejemplo.com', 'Juan1234!');
-      setShowLoginModal(false);
-      createOrder();
-    } catch (err) {
-      setLoginError(err instanceof Error ? err.message : 'Error al iniciar sesión');
+      await ordersService.create(payload);
+      clear();
+      navigate('/orders');
+    } catch (e: any) {
+      setError(e.message || 'No se pudo crear el pedido');
     } finally {
-      setLoginLoading(false);
+      setIsLoading(false);
     }
   };
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen pt-20 pb-28 flex flex-col items-center justify-center gap-4 px-5"
-        style={{ backgroundColor: 'var(--color-background)' }}>
-        <span className="material-symbols-outlined text-7xl" style={{ color: 'var(--color-outline-variant)' }}>
-          shopping_cart
-        </span>
-        <h2 className="text-[22px] font-extrabold" style={{ fontFamily: 'var(--font-headline)', color: 'var(--color-secondary)' }}>
-          Tu carrito está vacío
-        </h2>
-        <p className="text-sm text-center" style={{ color: 'var(--color-outline)' }}>
-          Agregá productos para continuar.
-        </p>
+      <div className="min-h-screen bg-[#fff8f6] flex flex-col items-center justify-center gap-6 px-4">
+        <div className="w-20 h-20 rounded-full bg-[#ffe9e4] flex items-center justify-center">
+          <ShoppingBag className="w-10 h-10 text-[#b22300]/40" />
+        </div>
+        <h1 className="text-2xl font-black text-[#281814]">Tu carrito está vacío</h1>
+        <p className="text-[#5c403a] text-sm">Agregá productos para continuar.</p>
         <button
           onClick={() => navigate('/products')}
-          className="mt-2 px-6 py-3 rounded-xl font-semibold text-base hover:opacity-90 transition-opacity shadow-sm"
-          style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--color-on-secondary)' }}
+          className="flex items-center gap-2 px-6 py-3 bg-[#b22300] text-white font-bold rounded-lg hover:bg-[#da3711] transition-all"
         >
+          <ArrowLeft className="w-4 h-4" />
           Ver productos
         </button>
       </div>
@@ -110,219 +63,167 @@ export const CartPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen pt-20 pb-28 flex flex-col" style={{ backgroundColor: 'var(--color-background)' }}>
-      <main className="flex-grow pt-6 pb-8 px-5 flex flex-col max-w-2xl mx-auto w-full">
+    <div className="min-h-screen bg-[#fff8f6]">
+      <main className="pt-20 pb-16 max-w-[1280px] mx-auto px-4 md:px-10">
 
-        <div className="mb-6 flex items-center justify-between">
-          <h2
-            className="text-[22px] font-extrabold"
-            style={{ fontFamily: 'var(--font-headline)', color: 'var(--color-secondary)' }}
-          >
-            Tu Carrito
-          </h2>
-          <span
-            className="text-[12px] font-extrabold uppercase tracking-wide px-3 py-1 rounded-full"
-            style={{ backgroundColor: 'var(--color-surface-container-high)', color: 'var(--color-outline)' }}
-          >
-            {items.reduce((a, i) => a + i.cantidad, 0)} ÍTEMS
-          </span>
-        </div>
+        <div className="flex flex-col lg:flex-row gap-10">
 
-        <div className="flex flex-col gap-4 mb-8">
-          {items.map(it => (
-            <div
-              key={it.producto.id}
-              className="p-3 flex gap-4 items-center rounded-xl"
-              style={{
-                backgroundColor: 'var(--color-surface-container)',
-                boxShadow: '0 4px 12px rgba(130,81,58,0.05)',
-                border: '1px solid rgba(222,230,195,0.3)',
-              }}
-            >
-              <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0"
-                style={{ backgroundColor: 'var(--color-surface-variant)' }}>
-                {it.producto.imagenes_url?.[0] ? (
-                  <img src={it.producto.imagenes_url[0]} alt={it.producto.nombre} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <span className="material-symbols-outlined text-3xl" style={{ color: 'var(--color-outline)' }}>
-                      lunch_dining
-                    </span>
+          {/* ── Lista de items ── */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-3xl font-black text-[#281814] tracking-tight">
+                Revisá tu Pedido
+              </h1>
+              <button
+                onClick={clear}
+                className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-[#ba1a1a] hover:text-red-700 transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Vaciar
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {items.map((it) => (
+                <div
+                  key={it.producto.id}
+                  className="bg-white rounded-xl border border-[#e5beb5]/40 shadow-[0_4px_20px_rgba(178,35,0,0.04)] p-5 flex flex-col sm:flex-row items-center gap-5"
+                >
+                  {/* Imagen */}
+                  <div className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 bg-[#ffe9e4]">
+                    {it.producto.imagenes_url?.[0] ? (
+                      <img
+                        src={it.producto.imagenes_url[0]}
+                        alt={it.producto.nombre}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[#b22300]/20 text-xs font-bold">
+                        Sin img
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              <div className="flex-grow flex flex-col justify-between h-full py-1 min-w-0">
-                <h3 className="font-semibold text-base line-clamp-1" style={{ color: 'var(--color-on-surface)' }}>
-                  {it.producto.nombre}
-                </h3>
-                <div className="flex items-center justify-between mt-2">
-                  <span
-                    className="text-[22px] font-extrabold"
-                    style={{ fontFamily: 'var(--font-headline)', color: 'var(--color-primary)' }}
-                  >
-                    ${(it.producto.precio_base * it.cantidad).toLocaleString()}
-                  </span>
-                  <div
-                    className="flex items-center rounded-full p-1"
-                    style={{ backgroundColor: 'var(--color-surface-container-highest)' }}
-                  >
+                  {/* Nombre */}
+                  <div className="flex-1 text-center sm:text-left min-w-0">
+                    <h3 className="font-semibold text-[#281814] text-base leading-snug truncate">
+                      {it.producto.nombre}
+                    </h3>
+                    <p className="text-[#5c403a] text-sm">
+                      ${it.producto.precio_base.toLocaleString('es-AR')} c/u
+                    </p>
+                  </div>
+
+                  {/* Control cantidad */}
+                  <div className="flex items-center gap-2 bg-[#ffe9e4] rounded-full px-2 py-1">
                     <button
-                      onClick={() => it.cantidad === 1 ? removeItem(it.producto.id!) : updateQuantity(it.producto.id!, it.cantidad - 1)}
-                      className="w-7 h-7 rounded-full flex items-center justify-center transition-colors"
-                      style={
-                        it.cantidad === 1
-                          ? { backgroundColor: 'var(--color-error-container)', color: 'var(--color-error)' }
-                          : { color: 'var(--color-on-surface)' }
-                      }
+                      onClick={() => updateQty(it.producto.id!, it.cantidad - 1)}
+                      className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[#fadcd5] active:scale-90 transition-all"
                     >
-                      <span className="material-symbols-outlined text-lg">
-                        {it.cantidad === 1 ? 'delete' : 'remove'}
-                      </span>
+                      <Minus className="w-3 h-3 text-[#b22300]" />
                     </button>
-                    <span className="w-6 text-center font-semibold text-base" style={{ color: 'var(--color-on-surface)' }}>
+                    <span className="w-6 text-center font-black text-[#281814]">
                       {it.cantidad}
                     </span>
                     <button
-                      onClick={() => updateQuantity(it.producto.id!, it.cantidad + 1)}
-                      className="w-7 h-7 rounded-full flex items-center justify-center transition-opacity hover:opacity-90 shadow-sm"
-                      style={{ backgroundColor: 'var(--color-primary)', color: 'var(--color-on-primary)' }}
+                      onClick={() => updateQty(it.producto.id!, it.cantidad + 1)}
+                      className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[#fadcd5] active:scale-90 transition-all"
                     >
-                      <span className="material-symbols-outlined text-lg">add</span>
+                      <Plus className="w-3 h-3 text-[#b22300]" />
+                    </button>
+                  </div>
+
+                  {/* Precio + eliminar */}
+                  <div className="flex items-center gap-3 min-w-[110px] justify-end">
+                    <div className="text-right">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-[#5c403a] mb-0.5">
+                        Precio
+                      </p>
+                      <p className="font-black text-[#b22300] text-lg">
+                        ${(it.producto.precio_base * it.cantidad).toLocaleString('es-AR')}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => removeItem(it.producto.id!)}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg text-[#5c403a]/50 hover:bg-[#ffdad6] hover:text-[#ba1a1a] transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div
-          className="mt-auto rounded-3xl p-6"
-          style={{ backgroundColor: 'var(--color-surface-container-highest)', boxShadow: '0 -8px 24px rgba(130,81,58,0.08)' }}
-        >
-          <div className="flex flex-col gap-3 mb-6">
-            <div className="flex justify-between items-center text-sm" style={{ color: 'var(--color-on-surface-variant)' }}>
-              <span>Subtotal</span>
-              <span>${getTotal().toLocaleString()}</span>
-            </div>
-            <div className="h-[2px] rounded-full" style={{ backgroundColor: 'rgba(199,199,186,0.3)' }} />
-            <div className="flex justify-between items-end">
-              <span className="text-[22px] font-extrabold" style={{ fontFamily: 'var(--font-headline)', color: 'var(--color-secondary)' }}>
-                Total
-              </span>
-              <span className="text-[28px] font-black" style={{ fontFamily: 'var(--font-headline)', color: 'var(--color-secondary)' }}>
-                ${getTotal().toLocaleString()}
-              </span>
-            </div>
-          </div>
-
-          <button
-            onClick={handleConfirm}
-            disabled={isPending}
-            className="w-full flex items-center justify-center gap-2 py-4 rounded-xl font-semibold text-base hover:opacity-90 active:scale-[0.98] transition-all shadow-md disabled:opacity-50"
-            style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--color-on-secondary)' }}
-          >
-            {isPending
-              ? <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-              : <><span>Finalizar Compra</span><span className="material-symbols-outlined fill-icon text-xl">arrow_forward</span></>
-            }
-          </button>
-
-          {error && (
-            <p className="mt-3 text-sm font-semibold text-center" style={{ color: 'var(--color-error)' }}>
-              {error.message}
-            </p>
-          )}
-        </div>
-
-      </main>
-
-      {/* ── Modal de login lazy ── aparece solo al confirmar el pedido ── */}
-      {showLoginModal && (
-        <div
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4"
-          style={{ backgroundColor: 'rgba(23,30,8,0.55)', backdropFilter: 'blur(4px)' }}
-        >
-          <div
-            className="w-full max-w-sm rounded-2xl p-7 flex flex-col gap-5"
-            style={{ backgroundColor: 'var(--color-surface-container-high)' }}
-          >
-            {/* Encabezado */}
-            <div className="flex items-center gap-3">
-              <span
-                className="w-11 h-11 rounded-full flex items-center justify-center shrink-0"
-                style={{ backgroundColor: 'var(--color-secondary-container)' }}
-              >
-                <span className="material-symbols-outlined fill-icon" style={{ color: 'var(--color-secondary)' }}>
-                  lock
-                </span>
-              </span>
-              <div>
-                <h2
-                  className="text-[18px] font-black leading-tight"
-                  style={{ fontFamily: 'var(--font-headline)', color: 'var(--color-on-surface)' }}
-                >
-                  Iniciá sesión para confirmar
-                </h2>
-                <p className="text-xs mt-0.5" style={{ color: 'var(--color-outline)' }}>
-                  Necesitás una cuenta para hacer tu pedido.
-                </p>
-              </div>
+              ))}
             </div>
 
-            {/* Credenciales demo */}
-            <div
-              className="rounded-xl px-4 py-3 flex items-start gap-3"
-              style={{ backgroundColor: 'var(--color-primary-container)' }}
+            {/* Seguir comprando */}
+            <button
+              onClick={() => navigate('/products')}
+              className="mt-6 flex items-center gap-2 text-sm font-semibold text-[#5c403a] hover:text-[#b22300] transition-colors"
             >
-              <span className="material-symbols-outlined text-xl mt-0.5" style={{ color: 'var(--color-primary)' }}>
-                info
-              </span>
-              <div>
-                <p className="text-xs font-extrabold uppercase tracking-wide" style={{ color: 'var(--color-on-primary-container)' }}>
-                  Usuario demo precargado
-                </p>
-                <p className="text-sm font-semibold mt-1" style={{ color: 'var(--color-on-primary-container)' }}>
-                  juan@ejemplo.com
-                </p>
-                <p className="text-xs" style={{ color: 'var(--color-on-primary-container)', opacity: 0.75 }}>
-                  Contraseña: Juan1234!
+              <ArrowLeft className="w-4 h-4" />
+              Seguir comprando
+            </button>
+          </div>
+
+          {/* ── Sidebar Order Summary ── */}
+          <aside className="w-full lg:w-[380px] flex-shrink-0">
+            <div className="bg-white rounded-xl border border-[#e5beb5]/40 shadow-[0_4px_20px_rgba(15,23,42,0.08)] p-6 sticky top-20">
+              <h2 className="font-bold text-[#281814] text-lg mb-6">Resumen del Pedido</h2>
+
+              <div className="space-y-4 mb-6">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-[#5c403a]">Subtotal</span>
+                  <span className="font-semibold text-[#281814]">
+                    ${subtotal.toLocaleString('es-AR')}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-[#5c403a]">Envío</span>
+                  <span className="font-semibold text-[#281814]">A confirmar</span>
+                </div>
+                <div className="pt-4 border-t border-[#e5beb5]">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-[#281814] text-base">Total</span>
+                    <span className="font-black text-[#b22300] text-3xl tracking-tight">
+                      ${subtotal.toLocaleString('es-AR')}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Info */}
+              <div className="flex items-start gap-3 p-4 bg-[#ffe9e4] border border-[#b22300]/10 rounded-lg mb-4">
+                <Info className="w-4 h-4 text-[#b22300] flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-[#5c403a]">
+                  Tu pedido apoya a productores locales y prácticas sustentables.
                 </p>
               </div>
-            </div>
 
-            {loginError && (
-              <p className="text-sm font-semibold text-center" style={{ color: 'var(--color-error)' }}>
-                {loginError}
-              </p>
-            )}
+              {/* Error */}
+              {error && (
+                <div className="mb-4 p-3 bg-[#ffdad6] border border-[#ba1a1a]/20 rounded-lg text-xs font-bold text-[#ba1a1a]">
+                  {error}
+                </div>
+              )}
 
-            {/* Acciones */}
-            <div className="flex flex-col gap-3">
+              {/* Confirmar */}
               <button
-                onClick={handleLoginAndOrder}
-                disabled={loginLoading}
-                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-base hover:opacity-90 active:scale-[0.98] transition-all shadow-md disabled:opacity-50"
-                style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--color-on-secondary)' }}
+                onClick={handleConfirm}
+                disabled={isLoading}
+                className="w-full bg-[#b22300] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#da3711] active:scale-[0.98] transition-all flex items-center justify-center gap-2 group shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {loginLoading
-                  ? <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                  : <><span className="material-symbols-outlined fill-icon text-xl">login</span><span>Ingresar y confirmar pedido</span></>
-                }
-              </button>
-              <button
-                onClick={() => setShowLoginModal(false)}
-                disabled={loginLoading}
-                className="w-full py-3 rounded-xl font-semibold text-sm hover:opacity-80 transition-opacity"
-                style={{ color: 'var(--color-outline)' }}
-              >
-                Cancelar
+                {isLoading ? (
+                  <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+                ) : (
+                  <>
+                    Confirmar Pedido
+                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
               </button>
             </div>
-          </div>
+          </aside>
         </div>
-      )}
+      </main>
     </div>
   );
 };

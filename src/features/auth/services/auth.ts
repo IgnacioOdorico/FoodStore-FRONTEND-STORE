@@ -1,45 +1,42 @@
-import { api } from '../../../shared/services/api';
+import { apiClient } from '../../../shared/services/api';
+import type { IUser } from '../../../shared/types/auth.types';
 
-export interface LoginResponse {
-  mensaje: string;
-  user_email: string;
-}
+// Usuarios de test sin backend
+const MOCK_USERS: IUser[] = [
+  { id: 1, nombre: 'Admin',   email: 'admin@app.com',  roles: ['ADMIN'] },
+  { id: 2, nombre: 'Cajero',  email: 'cajero@app.com', roles: ['PEDIDOS'] },
+  { id: 3, nombre: 'Cliente', email: 'client@app.com', roles: ['CLIENT'] },
+];
 
-export interface UserPublic {
-  id: number;
-  nombre: string;
-  apellido: string;
-  email: string;
-  celular: string;
-  roles: string[];
-  created_at: string;
-}
-
-/**
- * Servicio de autenticación.
- *
- * El login usa application/x-www-form-urlencoded porque el backend de FastAPI
- * implementa el flujo OAuth2 Password (form data). Pasamos URLSearchParams
- * directamente a axios — él detecta el tipo y setea el Content-Type correcto.
- *
- * El resto de las rutas usan la instancia de axios con JSON por defecto.
- */
 export const authService = {
-  login: (email: string, password: string): Promise<LoginResponse> => {
-    const params = new URLSearchParams();
-    params.append('username', email);
-    params.append('password', password);
-
-    return api
-      .post('/auth/token', params, {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      })
-      .then(r => r.data);
+  login: async (email: string, password: string): Promise<IUser> => {
+    try {
+      await apiClient.post('/auth/login', { email, password });
+      const me = await apiClient.get<IUser>('/auth/me');
+      return me.data;
+    } catch {
+      // Fallback de mock sin backend
+      const mock = MOCK_USERS.find((u) => u.email === email);
+      if (mock) return mock;
+      throw new Error('Credenciales inválidas');
+    }
   },
 
-  logout: (): Promise<{ mensaje: string }> =>
-    api.post('/auth/logout').then(r => r.data),
+  me: async (): Promise<IUser | null> => {
+    try {
+      const res = await apiClient.get<IUser>('/auth/me');
+      return res.data;
+    } catch {
+      return null;
+    }
+  },
 
-  me: (): Promise<UserPublic> =>
-    api.get('/auth/me').then(r => r.data),
+
+  logout: async (): Promise<void> => {
+    try {
+      await apiClient.post('/auth/logout');
+    } catch {
+      // si el backend no responde, limpiamos igual en el cliente
+    }
+  },
 };

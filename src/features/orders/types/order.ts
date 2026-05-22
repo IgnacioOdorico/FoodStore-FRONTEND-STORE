@@ -1,39 +1,39 @@
-export type OrderStatus = 'pendiente' | 'en_preparacion' | 'listo' | 'entregado' | 'cancelado';
-
-// Mapeo de estado_codigo del backend a OrderStatus del frontend
-export type OrderStatusCode = OrderStatus;
+export type OrderStatus =
+  | 'PENDIENTE'
+  | 'CONFIRMADO'
+  | 'EN_PREP'
+  | 'EN_CAMINO'
+  | 'ENTREGADO'
+  | 'CANCELADO';
 
 export interface OrderItem {
-  pedido_id: number;
+  id?: number;
   producto_id: number;
   cantidad: number;
-  nombre_snapshot: string;
-  precio_snapshot: number;
-  subtotal_snap: number;
-  personalizacion?: number[] | null;
-  created_at: string;
+  precio_unitario: number;
+  nombre_snapshot?: string;                 
+  producto?: { nombre: string; imagenes_url?: string[] };
 }
 
 export interface Order {
   id: number;
-  usuario_id: number;
-  direccion_id?: number | null;
-  estado_codigo: OrderStatus;
-  forma_pago_codigo: string;
-  subtotal: number;
-  descuento: number;
-  costo_envio: number;
-  total: number;
+  estado: OrderStatus;
+  forma_pago: string;                   
   notas?: string | null;
   created_at: string;
-  updated_at: string;
-  detalles: OrderItem[];
+  items: OrderItem[];
+  total?: number;
+  direccion_entrega_id?: number | null;
 }
 
+// Payload para crear un pedido desde el carrito
 export interface CreateOrderPayload {
-  detalles: { producto_id: number; cantidad: number }[];
-  forma_pago_codigo: string;
+  forma_pago: string;
   notas?: string | null;
-  descuento?: number;
-  costo_envio?: number;
+  direccion_entrega_id?: number | null;
+  items: {
+    producto_id: number;
+    cantidad: number;
+    precio_unitario: number;
+  }[];
 }
