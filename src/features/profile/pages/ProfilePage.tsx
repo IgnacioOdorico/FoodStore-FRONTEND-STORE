@@ -5,7 +5,6 @@ import {
   User, Mail, ShieldCheck, Bell, ChevronRight, LogOut, Clock, Lock,
 } from 'lucide-react';
 
-// ── Colores de rol ──────────────────────────────────────────────
 const ROLE_STYLE: Record<string, string> = {
   ADMIN:    'bg-[#ffdad2] text-[#8b1900]',
   STOCK:    'bg-[#dae2fd] text-[#3f465c]',
@@ -13,7 +12,6 @@ const ROLE_STYLE: Record<string, string> = {
   CLIENT:   'bg-[#d1fae5] text-[#065f46]',
 };
 
-// ── Toggle switch ───────────────────────────────────────────────
 const Toggle: React.FC<{ checked: boolean; onChange: () => void }> = ({ checked, onChange }) => (
   <button
     type="button"

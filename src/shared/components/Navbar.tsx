@@ -84,7 +84,6 @@ export const Navbar: React.FC = () => {
           {/* Usuario */}
           {user ? (
             <div className="flex items-center gap-2 ml-2">
-              {/* Avatar pill — clickable → Mi Perfil */}
               <Link
                 to="/profile"
                 className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[#ffe9e4] rounded-full hover:bg-[#fadcd5] transition-all"
