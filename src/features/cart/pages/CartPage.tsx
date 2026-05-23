@@ -22,13 +22,12 @@ export const CartPage: React.FC = () => {
     setError('');
 
     const payload = {
-      forma_pago: 'EFECTIVO',
+      forma_pago_codigo: 'EFECTIVO',
       notas: null,
-      direccion_entrega_id: null,
-      items: items.map((i) => ({
+      direccion_id: null,
+      detalles: items.map((i) => ({
         producto_id: i.producto.id!,
         cantidad: i.cantidad,
-        precio_unitario: i.producto.precio_base,
       })),
     };
 

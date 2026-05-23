@@ -1,5 +1,5 @@
 import { apiFetch } from '../../../shared/services/api';
-import type { CreateOrderPayload } from '../types/order';
+import type { CreateOrderPayload, Order } from '../types/order';
 
 export const ordersService = {
   getAll: async () => {
@@ -19,7 +19,7 @@ export const ordersService = {
     }));
   },
 
-  getById: (id: number) => apiFetch(`/pedidos/${id}`),
+  getById: (id: number) => apiFetch<Order>(`/pedidos/${id}`),
 
   create: (payload: CreateOrderPayload) => {
     const backendPayload = {
@@ -27,8 +27,8 @@ export const ordersService = {
         producto_id: item.producto_id,
         cantidad: item.cantidad,
       })),
-      forma_pago_codigo: payload.forma_pago,
-      direccion_id: payload.direccion_entrega_id || null,
+      forma_pago_codigo: payload.forma_pago_codigo,
+      direccion_id: payload.direccion_id || null,
       notas: payload.notas || null,
     };
 
@@ -38,6 +38,11 @@ export const ordersService = {
     });
   },
 
-  cancel: (id: number) =>
-    apiFetch(`/pedidos/${id}/cancelar`, { method: 'PATCH' }),
+  // El cliente puede cancelar solo desde PENDIENTE o CONFIRMADO
+  // El backend requiere body { motivo: string }
+  cancel: (id: number, motivo = 'Cancelado por el cliente') =>
+    apiFetch(`/pedidos/${id}/cancelar`, {
+      method: 'PATCH',
+      body: JSON.stringify({ motivo }),
+    }),
 };

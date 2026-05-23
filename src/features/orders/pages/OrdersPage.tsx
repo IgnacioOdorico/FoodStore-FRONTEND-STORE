@@ -25,7 +25,6 @@ const STATUS_TEXT: Record<OrderStatus, string> = {
   CANCELADO: 'text-[#ba1a1a]',
 };
 
-
 const TIMELINE_STEPS: { key: OrderStatus; label: string; detail: string }[] = [
   { key: 'PENDIENTE', label: 'Pedido Recibido', detail: 'Recibimos tu orden correctamente.' },
   { key: 'CONFIRMADO', label: 'Confirmado', detail: 'El local confirmó tu pedido.' },
@@ -35,26 +34,20 @@ const TIMELINE_STEPS: { key: OrderStatus; label: string; detail: string }[] = [
 ];
 
 const STATUS_ORDER: OrderStatus[] = ['PENDIENTE', 'CONFIRMADO', 'EN_PREP', 'EN_CAMINO', 'ENTREGADO', 'CANCELADO'];
-
 const CANCELLABLE: OrderStatus[] = ['PENDIENTE', 'CONFIRMADO'];
-
 
 const stepIndex = (status: OrderStatus) =>
   status === 'CANCELADO' ? -1 : STATUS_ORDER.indexOf(status);
 
-
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString('es-AR', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+    day: '2-digit', month: 'long', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
   });
 
 const calcTotal = (order: Order) =>
   order.total ??
-  (order.items || []).reduce((acc, i) => acc + i.precio_unitario * i.cantidad, 0);
+  (order.detalles || []).reduce((acc, i) => acc + i.precio_snapshot * i.cantidad, 0);
 
 interface SidebarProps {
   order: Order;
@@ -64,21 +57,17 @@ interface SidebarProps {
 }
 
 const OrderDetailSidebar: React.FC<SidebarProps> = ({ order, onCancel, isCancelling, onClose }) => {
-  const status = order.estado as OrderStatus;
+  const status      = order.estado_codigo as OrderStatus;
   const currentStep = stepIndex(status);
-  const total = calcTotal(order);
-  const cancelled = status === 'CANCELADO';
+  const total       = calcTotal(order);
+  const cancelled   = status === 'CANCELADO';
 
   return (
     <aside className="bg-[#ffe9e4] rounded-xl p-6 border border-[#e5beb5] h-fit sticky top-[88px]">
-      {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-[#281814]">Detalle del Pedido</h2>
         {onClose && (
-          <button
-            onClick={onClose}
-            className="lg:hidden text-[#5c403a] hover:text-[#b22300] transition-colors"
-          >
+          <button onClick={onClose} className="lg:hidden text-[#5c403a] hover:text-[#b22300] transition-colors">
             <X className="w-5 h-5" />
           </button>
         )}
@@ -89,27 +78,16 @@ const OrderDetailSidebar: React.FC<SidebarProps> = ({ order, onCancel, isCancell
           {TIMELINE_STEPS.map((step, idx) => {
             const done = currentStep >= idx;
             const current = currentStep === idx;
-
             return (
               <div key={step.key} className="flex gap-4 relative">
-
                 {idx < TIMELINE_STEPS.length - 1 && (
-                  <div
-                    className={`absolute left-3 top-6 w-0.5 h-full ${done ? 'bg-[#b22300]' : 'bg-[#e5beb5]'}`}
-                  />
+                  <div className={`absolute left-3 top-6 w-0.5 h-full ${done ? 'bg-[#b22300]' : 'bg-[#e5beb5]'}`} />
                 )}
-
                 <div className="flex-shrink-0 flex flex-col items-center">
-                  <div
-                    className={`w-6 h-6 rounded-full flex items-center justify-center z-10 transition-colors ${done ? 'bg-[#b22300]' : 'bg-[#e5beb5]'
-                      }`}
-                  >
-                    {done && (
-                      <CheckCircle2 className="w-3.5 h-3.5 text-white" strokeWidth={3} />
-                    )}
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center z-10 transition-colors ${done ? 'bg-[#b22300]' : 'bg-[#e5beb5]'}`}>
+                    {done && <CheckCircle2 className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
                   </div>
                 </div>
-
                 <div className="pb-2">
                   <p className={`font-bold text-base leading-tight ${done ? 'text-[#281814]' : 'text-[#5c403a]/50'}`}>
                     {step.label}
@@ -134,19 +112,17 @@ const OrderDetailSidebar: React.FC<SidebarProps> = ({ order, onCancel, isCancell
 
       {/* Items */}
       <div className="border-t border-[#e5beb5] pt-4 space-y-2">
-        {(order.items || []).map((item, idx) => (
+        {(order.detalles || []).map((item, idx) => (
           <div key={idx} className="flex justify-between text-sm">
             <span className="text-[#5c403a]">
-              {item.nombre_snapshot ?? item.producto?.nombre ?? `Producto #${item.producto_id}`}
+              {item.nombre_snapshot ?? `Producto #${item.producto_id}`}
               <span className="ml-1 text-[#907068]">x{item.cantidad}</span>
             </span>
             <span className="text-[#281814] font-bold">
-              ${(item.precio_unitario * item.cantidad).toLocaleString('es-AR')}
+              ${(item.precio_snapshot * item.cantidad).toLocaleString('es-AR')}
             </span>
           </div>
         ))}
-
-        {/* Total */}
         <div className="border-t border-dashed border-[#e5beb5] pt-3 mt-3 flex justify-between items-center">
           <span className="text-lg font-semibold text-[#281814]">Total</span>
           <span className="text-2xl font-bold text-[#b22300]">
@@ -155,52 +131,43 @@ const OrderDetailSidebar: React.FC<SidebarProps> = ({ order, onCancel, isCancell
         </div>
       </div>
 
-      {/* Forma de pago */}
-      {
-        order.forma_pago && (
-          <div className="mt-4 flex items-center gap-2 text-sm text-[#5c403a]">
-            <span className="text-[12px] font-bold uppercase tracking-[0.05em]">Pago:</span>
-            <span className="font-medium">{order.forma_pago}</span>
-          </div>
-        )
-      }
+      {order.forma_pago_codigo && (
+        <div className="mt-4 flex items-center gap-2 text-sm text-[#5c403a]">
+          <span className="text-[12px] font-bold uppercase tracking-[0.05em]">Pago:</span>
+          <span className="font-medium">{order.forma_pago_codigo}</span>
+        </div>
+      )}
 
-      {/* Notas */}
-      {
-        order.notas && (
-          <div className="mt-3 p-3 bg-[#fff0ed] rounded-lg border border-[#e5beb5] text-sm text-[#5c403a]">
-            <span className="text-[11px] font-bold uppercase tracking-widest text-[#907068] block mb-1">Notas</span>
-            {order.notas}
-          </div>
-        )
-      }
+      {order.notas && (
+        <div className="mt-3 p-3 bg-[#fff0ed] rounded-lg border border-[#e5beb5] text-sm text-[#5c403a]">
+          <span className="text-[11px] font-bold uppercase tracking-widest text-[#907068] block mb-1">Notas</span>
+          {order.notas}
+        </div>
+      )}
 
-      {/* Cancelar */}
-      {
-        CANCELLABLE.includes(status) && (
-          <button
-            onClick={() => onCancel(order.id)}
-            disabled={isCancelling}
-            className="w-full mt-6 flex items-center justify-center gap-2 py-3 rounded-lg border border-red-200 bg-red-50 text-[#ba1a1a] font-bold text-sm hover:bg-red-100 active:scale-95 transition-all disabled:opacity-50"
-          >
-            <X className="w-4 h-4" />
-            Cancelar Pedido
-          </button>
-        )
-      }
-    </aside >
+      {CANCELLABLE.includes(status) && (
+        <button
+          onClick={() => onCancel(order.id)}
+          disabled={isCancelling}
+          className="w-full mt-6 flex items-center justify-center gap-2 py-3 rounded-lg border border-red-200 bg-red-50 text-[#ba1a1a] font-bold text-sm hover:bg-red-100 active:scale-95 transition-all disabled:opacity-50"
+        >
+          <X className="w-4 h-4" />
+          Cancelar Pedido
+        </button>
+      )}
+    </aside>
   );
 };
 
 
 export const OrdersPage: React.FC = () => {
-  const navigate = useNavigate();
+  const navigate    = useNavigate();
   const queryClient = useQueryClient();
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
   const { data: orders, isLoading, isError, refetch } = useQuery({
     queryKey: ['orders'],
-    queryFn: ordersService.getAll,
+    queryFn:  ordersService.getAll,
   });
 
   const { data: products } = useQuery({
@@ -210,7 +177,7 @@ export const OrdersPage: React.FC = () => {
 
   const cancelMutation = useMutation({
     mutationFn: (id: number) => ordersService.cancel(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['orders'] }),
+    onSuccess:  () => queryClient.invalidateQueries({ queryKey: ['orders'] }),
   });
 
   const typedOrders = (orders || []) as Order[];
@@ -222,9 +189,9 @@ export const OrdersPage: React.FC = () => {
   }, [typedOrders, selectedId]);
 
   if (isLoading) return <LoadingState />;
-  if (isError) return <ErrorState onRetry={() => refetch()} />;
+  if (isError)   return <ErrorState onRetry={() => refetch()} />;
 
-  if (!orders || orders.length === 0) {
+  if (typedOrders.length === 0) {
     return (
       <div className="min-h-screen bg-[#fff8f6] flex flex-col items-center justify-center gap-6 px-4">
         <div className="w-20 h-20 rounded-full bg-[#ffe9e4] flex items-center justify-center">
@@ -269,15 +236,13 @@ export const OrdersPage: React.FC = () => {
           </p>
         </div>
 
-
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
 
-          {/* Lista de las ordenes */}
           <div className="lg:col-span-7 space-y-6">
             {typedOrders.map((order) => {
-              const status = order.estado as OrderStatus;
-              const total = calcTotal(order);
-              const isActive = status !== 'ENTREGADO' && status !== 'CANCELADO';
+              const status     = order.estado_codigo as OrderStatus;
+              const total      = calcTotal(order);
+              const isActive   = status !== 'ENTREGADO' && status !== 'CANCELADO';
               const isSelected = order.id === selectedId;
 
               return (
@@ -293,16 +258,11 @@ export const OrdersPage: React.FC = () => {
                 >
                   <div className="flex flex-wrap justify-between items-start gap-4">
                     <div>
-                      {/* Estado  */}
                       <span className={`block text-[12px] font-bold uppercase tracking-[0.05em] mb-1 ${STATUS_TEXT[status]}`}>
                         {STATUS_LABEL[status]}
                       </span>
-                      <h3 className="text-lg font-semibold text-[#281814]">
-                        #ORD-{order.id}
-                      </h3>
-                      <p className="text-sm text-[#5c403a]">
-                        {formatDate(order.created_at)}
-                      </p>
+                      <h3 className="text-lg font-semibold text-[#281814]">#ORD-{order.id}</h3>
+                      <p className="text-sm text-[#5c403a]">{formatDate(order.created_at)}</p>
                     </div>
                     <div className="text-right">
                       <span className={`text-2xl font-bold ${isActive ? 'text-[#b22300]' : 'text-[#281814]'}`}>
@@ -310,10 +270,9 @@ export const OrdersPage: React.FC = () => {
                       </span>
                       <button
                         onClick={(e) => { e.stopPropagation(); setSelectedId(order.id); }}
-                        className={`mt-1 flex items-center gap-1 text-[12px] font-bold uppercase tracking-[0.05em] transition-colors ${isActive
-                          ? 'text-[#b22300] hover:underline'
-                          : 'text-[#5c403a] hover:text-[#b22300]'
-                          }`}
+                        className={`mt-1 flex items-center gap-1 text-[12px] font-bold uppercase tracking-[0.05em] transition-colors ${
+                          isActive ? 'text-[#b22300] hover:underline' : 'text-[#5c403a] hover:text-[#b22300]'
+                        }`}
                       >
                         Ver Detalle
                         <ChevronRight className="w-4 h-4" />
@@ -321,35 +280,18 @@ export const OrdersPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Ordenes activas y la imagen  */}
-                  {isActive && order.items && order.items.length > 0 && (
-                    <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-                      {order.items.map((item, idx) => {
-                        const productData = products?.find(p => p.id === item.producto_id);
-                        const imageUrl = item.producto?.imagenes_url?.[0] || productData?.imagenes_url?.[0];
-                        return (
-                          <div
-                            key={idx}
-                            className="w-12 h-12 rounded-lg bg-[#fadcd5] flex-shrink-0 overflow-hidden flex items-center justify-center"
-                            title={item.nombre_snapshot ?? item.producto?.nombre ?? `Producto #${item.producto_id}`}
-                          >
-                            {imageUrl ? (
-                              <img
-                                src={imageUrl}
-                                alt={item.nombre_snapshot ?? ''}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <span className="text-[10px] font-bold text-[#b22300]/50 text-center leading-tight px-1">
-                                {(item.nombre_snapshot ?? `#${item.producto_id}`).slice(0, 4)}
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })}
+                  {isActive && order.detalles && order.detalles.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {order.detalles.map((item, idx) => (
+                        <span
+                          key={idx}
+                          className="text-[11px] font-semibold bg-[#fadcd5] text-[#8b1900] px-2 py-0.5 rounded-full"
+                        >
+                          {item.nombre_snapshot} x{item.cantidad}
+                        </span>
+                      ))}
                     </div>
                   )}
-
 
                   <div className={`mt-3 flex justify-end text-sm ${STATUS_TEXT[status]} opacity-60`}>
                     {StatusIcon[status]}
