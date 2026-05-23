@@ -3,12 +3,13 @@ import { useQuery } from '@tanstack/react-query';
 import { productsService } from '../services/products';
 import { LoadingState, ErrorState, EmptyState } from '../../../shared/ui/States';
 import { useCartStore } from '../../cart/store/useCartStore';
-import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Eye } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Plus, Eye } from 'lucide-react';
 import type { Producto } from '../types/producto';
 
 export const ProductsPage: React.FC = () => {
-  const [search, setSearch] = useState('');
+  const [searchParams] = useSearchParams();
+  const search = searchParams.get('q') ?? '';
   const [selectedCategory, setSelectedCategory] = useState<string>('');
 
   const { data: products, isLoading, isError, refetch } = useQuery({
@@ -93,18 +94,6 @@ export const ProductsPage: React.FC = () => {
             <p className="text-[#5c403a] text-sm mt-1">Selección especial para vos</p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Buscador */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5c403a]/50" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar producto..."
-                className="pl-9 pr-4 py-2 bg-white border border-[#e5beb5] rounded-full text-sm text-[#281814] placeholder:text-[#5c403a]/40 focus:outline-none focus:ring-2 focus:ring-[#b22300]/20 focus:border-[#b22300] w-52 transition-all"
-              />
-            </div>
-          </div>
         </div>
 
         {/* ── Pills de categoría ── */}
