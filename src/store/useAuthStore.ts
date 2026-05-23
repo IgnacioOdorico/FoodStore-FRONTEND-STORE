@@ -10,6 +10,7 @@ interface AuthState {
   logout: () => Promise<void>;
   hasRole: (...roles: IRole[]) => boolean;
   checkAuth: () => Promise<void>;
+  updateUser: (data: { nombre?: string; apellido?: string; celular?: string }) => Promise<IUser>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -54,5 +55,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch {
       set({ user: null, isCheckingAuth: false });
     }
+  },
+
+  updateUser: async (data) => {
+    const updated = await authService.updateMe(data);
+    set({ user: updated });
+    return updated;
   },
 }));
