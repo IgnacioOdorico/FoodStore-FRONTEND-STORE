@@ -5,7 +5,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useCartStore } from '../../features/cart/store/useCartStore';
 
 export const Navbar: React.FC = () => {
-  const { user, logout } = useAuthStore();
+  const { user, logout, isCheckingAuth } = useAuthStore();
   const navigate = useNavigate();
   const itemCount = useCartStore(
     (state) => state.items.reduce((acc, i) => acc + i.cantidad, 0),
@@ -82,7 +82,9 @@ export const Navbar: React.FC = () => {
           </NavLink>
 
           {/* Usuario */}
-          {user ? (
+          {isCheckingAuth ? (
+            <div className="w-8 h-8 ml-2 rounded-full border-2 border-[#b22300]/20 border-t-[#b22300] animate-spin" />
+          ) : user ? (
             <div className="flex items-center gap-2 ml-2">
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[#ffe9e4] rounded-full">
                 <div className="w-6 h-6 rounded-full bg-[#b22300] flex items-center justify-center">

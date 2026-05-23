@@ -1,4 +1,4 @@
-import { api } from '../../../shared/services/api';
+import { apiClient } from '../../../shared/services/api';
 import type { Producto } from '../types/producto';
 
 /**
@@ -11,8 +11,8 @@ import type { Producto } from '../types/producto';
  */
 export const productsService = {
   getAll: (): Promise<Producto[]> =>
-    api.get('/productos/').then(r => r.data),
+    apiClient.get('/productos/').then(r => r.data),
 
   getById: (id: number): Promise<Producto> =>
-    api.get(`/productos/${id}`).then(r => r.data),
+    apiClient.get(`/productos/${id}`).then(r => r.data),
 };

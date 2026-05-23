@@ -1,24 +1,36 @@
 import { apiClient } from '../../../shared/services/api';
 import type { IUser } from '../../../shared/types/auth.types';
 
-// Usuarios de test sin backend
-const MOCK_USERS: IUser[] = [
-  { id: 1, nombre: 'Admin',   email: 'admin@app.com',  roles: ['ADMIN'] },
-  { id: 2, nombre: 'Cajero',  email: 'cajero@app.com', roles: ['PEDIDOS'] },
-  { id: 3, nombre: 'Cliente', email: 'client@app.com', roles: ['CLIENT'] },
-];
-
 export const authService = {
   login: async (email: string, password: string): Promise<IUser> => {
     try {
-      await apiClient.post('/auth/login', { email, password });
+      // FastAPI OAuth2PasswordRequestForm expects Form Data with 'username' and 'password'
+      const formData = new URLSearchParams();
+      formData.append('username', email);
+      formData.append('password', password);
+
+      await apiClient.post('/auth/token', formData, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      });
+
       const me = await apiClient.get<IUser>('/auth/me');
       return me.data;
-    } catch {
-      // Fallback de mock sin backend
-      const mock = MOCK_USERS.find((u) => u.email === email);
-      if (mock) return mock;
-      throw new Error('Credenciales inválidas');
+    } catch (error) {
+      console.error("Error en login real contra el backend:", error);
+      throw new Error('Credenciales inválidas o error en el servidor');
+    }
+  },
+
+  register: async (data: Record<string, any>): Promise<IUser> => {
+    try {
+      // Backend expects UserCreate schema at POST /auth/register
+      const res = await apiClient.post<IUser>('/auth/register', data);
+      return res.data;
+    } catch (error: any) {
+      console.error("Error en registro:", error);
+      throw new Error(error.response?.data?.detail || 'Error al registrar usuario');
     }
   },
 
@@ -31,12 +43,12 @@ export const authService = {
     }
   },
 
-
   logout: async (): Promise<void> => {
     try {
       await apiClient.post('/auth/logout');
     } catch {
-      // si el backend no responde, limpiamos igual en el cliente
     }
   },
 };
+
+
