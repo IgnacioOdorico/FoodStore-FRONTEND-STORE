@@ -3,11 +3,11 @@ import { useAuthStore } from '../../../store/useAuthStore';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
-// Accesos de test
+// Accesos de test - credenciales del seed del backend
 const DEMO_USERS = [
-  { email: 'admin@app.com',  pass: 'admin123',  role: 'Admin',   cls: 'bg-[#ffdad2] text-[#8b1900]' },
-  { email: 'cajero@app.com', pass: 'cajero123', role: 'Cajero',  cls: 'bg-[#dae2fd] text-[#3f465c]' },
-  { email: 'client@app.com', pass: 'client123', role: 'Cliente', cls: 'bg-[#d1fae5] text-[#065f46]' },
+  { email: 'admin@nachopizza.com',   pass: 'Admin1234!',    role: 'Admin',   cls: 'bg-[#ffdad2] text-[#8b1900]' },
+  { email: 'pedidos@nachopizza.com', pass: 'Pedidos1234!',  role: 'Cajero',  cls: 'bg-[#dae2fd] text-[#3f465c]' },
+  { email: 'juan@ejemplo.com',       pass: 'Juan1234!',     role: 'Cliente', cls: 'bg-[#d1fae5] text-[#065f46]' },
 ];
 
 export const LoginPage = () => {
