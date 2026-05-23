@@ -1,10 +1,18 @@
-import { apiFetch } from '../../../shared/services/api';
+import { api } from '../../../shared/services/api';
 import type { Producto } from '../types/producto';
 
+/**
+ * Servicio de productos.
+ * Usa la instancia de axios centralizada — no hay lógica de fetch manual acá.
+ *
+ * useQuery (TanStack) ejemplo:
+ *   const { data } = useQuery({ queryKey: ['products'], queryFn: productsService.getAll })
+ *   const { data } = useQuery({ queryKey: ['product', id], queryFn: () => productsService.getById(id) })
+ */
 export const productsService = {
-  getAll: () => apiFetch('/productos/'),
-  getById: (id: number) => apiFetch(`/productos/${id}`),
-  create: (data: Partial<Producto>) => apiFetch('/productos/', { method: 'POST', body: JSON.stringify(data) }),
-  update: (id: number, data: Partial<Producto>) => apiFetch(`/productos/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  delete: (id: number) => apiFetch(`/productos/${id}`, { method: 'DELETE' }),
+  getAll: (): Promise<Producto[]> =>
+    api.get('/productos/').then(r => r.data),
+
+  getById: (id: number): Promise<Producto> =>
+    api.get(`/productos/${id}`).then(r => r.data),
 };

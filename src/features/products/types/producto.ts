@@ -1,20 +1,24 @@
-import { Categoria } from \"../../categories/types/categoria\";
-import { Ingrediente } from \"../../ingredients/types/ingrediente\";
+export interface Categoria {
+  id: number;
+  nombre: string;
+  es_principal?: boolean;
+}
+
+export interface Ingrediente {
+  id: number;
+  nombre: string;
+  es_alergeno: boolean;
+  es_removible?: boolean;
+}
 
 export interface Producto {
-    id?: number;
-    nombre: string;
-    descripcion?: string;
-    precio_base: number;
-    imagenes_url: string[];
-    stock_cantidad: number;
-    disponible: boolean;
-    
-    created_at?: string;
-    updated_at?: string;
-    deleted_at?: string | null;
-
-    // Relaciones
-    categorias?: (Categoria & { es_principal?: boolean })[];
-    ingredientes?: (Ingrediente & { es_removible?: boolean })[];
+  id?: number;
+  nombre: string;
+  descripcion?: string;
+  precio_base: number;
+  imagenes_url: string[];
+  stock_cantidad: number;
+  disponible: boolean;
+  categorias?: Categoria[];
+  ingredientes?: Ingrediente[];
 }

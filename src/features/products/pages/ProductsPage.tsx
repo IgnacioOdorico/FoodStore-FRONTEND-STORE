@@ -55,7 +55,7 @@ export const ProductsPage: React.FC = () => {
                  style={{ backgroundImage: 'radial-gradient(circle at 70% 50%, #fff 0%, transparent 60%)' }} />
             <div className="absolute inset-0 flex flex-col justify-end p-10">
               <span className="bg-white text-[#b22300] text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full w-fit mb-3">
-                Editor's Choice
+                Selección del Editor
               </span>
               <h1 className="text-white font-black text-3xl md:text-5xl max-w-md leading-tight tracking-tight mb-3">
                 La Mejor Experiencia Gourmet
