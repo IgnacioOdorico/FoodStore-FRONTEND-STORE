@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { ShoppingCart, ClipboardList, User, LogOut, UtensilsCrossed } from 'lucide-react';
+import { ShoppingCart, ClipboardList, User, LogOut, UtensilsCrossed, Settings } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useCartStore } from '../../features/cart/store/useCartStore';
 
@@ -84,14 +84,30 @@ export const Navbar: React.FC = () => {
           {/* Usuario */}
           {user ? (
             <div className="flex items-center gap-2 ml-2">
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[#ffe9e4] rounded-full">
+              {/* Avatar pill — clickable → Mi Perfil */}
+              <Link
+                to="/profile"
+                className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[#ffe9e4] rounded-full hover:bg-[#fadcd5] transition-all"
+                title="Mi Perfil"
+              >
                 <div className="w-6 h-6 rounded-full bg-[#b22300] flex items-center justify-center">
                   <span className="text-white text-[10px] font-black uppercase">
                     {user.nombre[0]}
                   </span>
                 </div>
                 <span className="text-xs font-semibold text-[#281814]">{user.nombre}</span>
-              </div>
+              </Link>
+
+              {/* Configuración */}
+              <Link
+                to="/profile"
+                className="p-2 text-[#5c403a] hover:bg-[#ffe9e4] rounded-full transition-all"
+                title="Configuración"
+              >
+                <Settings className="w-4 h-4" />
+              </Link>
+
+              {/* Cerrar sesión */}
               <button
                 onClick={handleLogout}
                 className="p-2 text-[#5c403a] hover:bg-[#ffe9e4] rounded-full transition-all"
