@@ -1,11 +1,10 @@
 import { apiFetch } from '../../../shared/services/api';
-import type { CreateOrderPayload } from '../types/order';
+import type { CreateOrderPayload, Order } from '../types/order';
 
 export const ordersService = {
-  // Cliente ve solo sus propios pedidos (backend filtra por JWT)
-  getAll: () => apiFetch('/pedidos/'),
+  getAll: () => apiFetch<Order[]>('/pedidos/me'),
 
-  getById: (id: number) => apiFetch(`/pedidos/${id}`),
+  getById: (id: number) => apiFetch<Order>(`/pedidos/${id}`),
 
   // Crea un pedido desde el carrito
   create: (payload: CreateOrderPayload) =>
@@ -15,6 +14,10 @@ export const ordersService = {
     }),
 
   // El cliente puede cancelar solo desde PENDIENTE o CONFIRMADO
-  cancel: (id: number) =>
-    apiFetch(`/pedidos/${id}/cancelar`, { method: 'PATCH' }),
+  // El backend requiere body { motivo: string }
+  cancel: (id: number, motivo = 'Cancelado por el cliente') =>
+    apiFetch(`/pedidos/${id}/cancelar`, {
+      method: 'PATCH',
+      body: JSON.stringify({ motivo }),
+    }),
 };

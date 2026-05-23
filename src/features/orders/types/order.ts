@@ -7,33 +7,41 @@ export type OrderStatus =
   | 'CANCELADO';
 
 export interface OrderItem {
-  id?: number;
+  pedido_id?: number;
   producto_id: number;
   cantidad: number;
-  precio_unitario: number;
-  nombre_snapshot?: string;                 
-  producto?: { nombre: string; imagenes_url?: string[] };
+  nombre_snapshot: string;
+  precio_snapshot: number;      
+  subtotal_snap?: number;
+  personalizacion?: number[] | null;
+  created_at?: string;
 }
 
 export interface Order {
   id: number;
-  estado: OrderStatus;
-  forma_pago: string;                   
+  usuario_id?: number;
+  estado_codigo: OrderStatus;    
+  forma_pago_codigo: string;     
   notas?: string | null;
   created_at: string;
-  items: OrderItem[];
-  total?: number;
-  direccion_entrega_id?: number | null;
+  updated_at?: string;
+  detalles: OrderItem[];        
+  total: number;
+  subtotal?: number;
+  descuento?: number;
+  costo_envio?: number;
+  direccion_id?: number | null;
 }
 
-// Payload para crear un pedido desde el carrito
 export interface CreateOrderPayload {
-  forma_pago: string;
+  forma_pago_codigo: string;
   notas?: string | null;
-  direccion_entrega_id?: number | null;
-  items: {
+  direccion_id?: number | null;
+  detalles: {
     producto_id: number;
     cantidad: number;
-    precio_unitario: number;
+    personalizacion?: number[];
   }[];
+  descuento?: number;
+  costo_envio?: number;
 }

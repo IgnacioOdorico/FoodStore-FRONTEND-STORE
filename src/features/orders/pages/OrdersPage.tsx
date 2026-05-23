@@ -24,7 +24,6 @@ const STATUS_TEXT: Record<OrderStatus, string> = {
   CANCELADO:  'text-[#ba1a1a]',
 };
 
-
 const TIMELINE_STEPS: { key: OrderStatus; label: string; detail: string }[] = [
   { key: 'PENDIENTE',  label: 'Pedido Recibido',  detail: 'Recibimos tu orden correctamente.' },
   { key: 'CONFIRMADO', label: 'Confirmado',        detail: 'El local confirmó tu pedido.' },
@@ -34,26 +33,20 @@ const TIMELINE_STEPS: { key: OrderStatus; label: string; detail: string }[] = [
 ];
 
 const STATUS_ORDER: OrderStatus[] = ['PENDIENTE', 'CONFIRMADO', 'EN_PREP', 'EN_CAMINO', 'ENTREGADO', 'CANCELADO'];
-
 const CANCELLABLE: OrderStatus[] = ['PENDIENTE', 'CONFIRMADO'];
 
-// Índice del estado en el timeline (CANCELADO = -1)
 const stepIndex = (status: OrderStatus) =>
   status === 'CANCELADO' ? -1 : STATUS_ORDER.indexOf(status);
 
-
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString('es-AR', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+    day: '2-digit', month: 'long', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
   });
 
 const calcTotal = (order: Order) =>
   order.total ??
-  (order.items || []).reduce((acc, i) => acc + i.precio_unitario * i.cantidad, 0);
+  (order.detalles || []).reduce((acc, i) => acc + i.precio_snapshot * i.cantidad, 0);
 
 interface SidebarProps {
   order: Order;
@@ -63,54 +56,37 @@ interface SidebarProps {
 }
 
 const OrderDetailSidebar: React.FC<SidebarProps> = ({ order, onCancel, isCancelling, onClose }) => {
-  const status    = order.estado as OrderStatus;
+  const status      = order.estado_codigo as OrderStatus;
   const currentStep = stepIndex(status);
-  const total     = calcTotal(order);
-  const cancelled = status === 'CANCELADO';
+  const total       = calcTotal(order);
+  const cancelled   = status === 'CANCELADO';
 
   return (
     <aside className="bg-[#ffe9e4] rounded-xl p-6 border border-[#e5beb5] h-fit sticky top-[88px]">
-      {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-[#281814]">Detalle del Pedido</h2>
         {onClose && (
-          <button
-            onClick={onClose}
-            className="lg:hidden text-[#5c403a] hover:text-[#b22300] transition-colors"
-          >
+          <button onClick={onClose} className="lg:hidden text-[#5c403a] hover:text-[#b22300] transition-colors">
             <X className="w-5 h-5" />
           </button>
         )}
       </div>
 
-      {/* Status Timeline */}
       {!cancelled ? (
         <div className="mb-10 space-y-6">
           {TIMELINE_STEPS.map((step, idx) => {
             const done    = currentStep >= idx;
             const current = currentStep === idx;
-
             return (
               <div key={step.key} className="flex gap-4 relative">
-                {/* Connector line */}
                 {idx < TIMELINE_STEPS.length - 1 && (
-                  <div
-                    className={`absolute left-3 top-6 w-0.5 h-full ${done ? 'bg-[#b22300]' : 'bg-[#e5beb5]'}`}
-                  />
+                  <div className={`absolute left-3 top-6 w-0.5 h-full ${done ? 'bg-[#b22300]' : 'bg-[#e5beb5]'}`} />
                 )}
-                {/* Circle */}
                 <div className="flex-shrink-0 flex flex-col items-center">
-                  <div
-                    className={`w-6 h-6 rounded-full flex items-center justify-center z-10 transition-colors ${
-                      done ? 'bg-[#b22300]' : 'bg-[#e5beb5]'
-                    }`}
-                  >
-                    {done && (
-                      <CheckCircle2 className="w-3.5 h-3.5 text-white" strokeWidth={3} />
-                    )}
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center z-10 transition-colors ${done ? 'bg-[#b22300]' : 'bg-[#e5beb5]'}`}>
+                    {done && <CheckCircle2 className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
                   </div>
                 </div>
-                {/* Text */}
                 <div className="pb-2">
                   <p className={`font-bold text-base leading-tight ${done ? 'text-[#281814]' : 'text-[#5c403a]/50'}`}>
                     {step.label}
@@ -133,21 +109,18 @@ const OrderDetailSidebar: React.FC<SidebarProps> = ({ order, onCancel, isCancell
         </div>
       )}
 
-      {/* Items summary */}
       <div className="border-t border-[#e5beb5] pt-4 space-y-2">
-        {(order.items || []).map((item, idx) => (
+        {(order.detalles || []).map((item, idx) => (
           <div key={idx} className="flex justify-between text-sm">
             <span className="text-[#5c403a]">
-              {item.nombre_snapshot ?? item.producto?.nombre ?? `Producto #${item.producto_id}`}
+              {item.nombre_snapshot ?? `Producto #${item.producto_id}`}
               <span className="ml-1 text-[#907068]">x{item.cantidad}</span>
             </span>
             <span className="text-[#281814] font-bold">
-              ${(item.precio_unitario * item.cantidad).toLocaleString('es-AR')}
+              ${(item.precio_snapshot * item.cantidad).toLocaleString('es-AR')}
             </span>
           </div>
         ))}
-
-        {/* Total */}
         <div className="border-t border-dashed border-[#e5beb5] pt-3 mt-3 flex justify-between items-center">
           <span className="text-lg font-semibold text-[#281814]">Total</span>
           <span className="text-2xl font-bold text-[#b22300]">
@@ -156,15 +129,13 @@ const OrderDetailSidebar: React.FC<SidebarProps> = ({ order, onCancel, isCancell
         </div>
       </div>
 
-      {/* Forma de pago */}
-      {order.forma_pago && (
+      {order.forma_pago_codigo && (
         <div className="mt-4 flex items-center gap-2 text-sm text-[#5c403a]">
           <span className="text-[12px] font-bold uppercase tracking-[0.05em]">Pago:</span>
-          <span className="font-medium">{order.forma_pago}</span>
+          <span className="font-medium">{order.forma_pago_codigo}</span>
         </div>
       )}
 
-      {/* Notas */}
       {order.notas && (
         <div className="mt-3 p-3 bg-[#fff0ed] rounded-lg border border-[#e5beb5] text-sm text-[#5c403a]">
           <span className="text-[11px] font-bold uppercase tracking-widest text-[#907068] block mb-1">Notas</span>
@@ -172,7 +143,6 @@ const OrderDetailSidebar: React.FC<SidebarProps> = ({ order, onCancel, isCancell
         </div>
       )}
 
-      {/* Cancelar */}
       {CANCELLABLE.includes(status) && (
         <button
           onClick={() => onCancel(order.id)}
@@ -189,25 +159,33 @@ const OrderDetailSidebar: React.FC<SidebarProps> = ({ order, onCancel, isCancell
 
 
 export const OrdersPage: React.FC = () => {
-  const navigate     = useNavigate();
-  const queryClient  = useQueryClient();
+  const navigate    = useNavigate();
+  const queryClient = useQueryClient();
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
   const { data: orders, isLoading, isError, refetch } = useQuery({
     queryKey: ['orders'],
-    queryFn: ordersService.getAll,
+    queryFn:  ordersService.getAll,
   });
 
   const cancelMutation = useMutation({
     mutationFn: (id: number) => ordersService.cancel(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['orders'] }),
+    onSuccess:  () => queryClient.invalidateQueries({ queryKey: ['orders'] }),
   });
+
+  const typedOrders = (orders ?? []) as Order[];
+
+  // Auto-selecciona el primer pedido cuando cargan los datos
+  useEffect(() => {
+    if (selectedId === null && typedOrders.length > 0) {
+      setSelectedId(typedOrders[0].id);
+    }
+  }, [typedOrders, selectedId]);
 
   if (isLoading) return <LoadingState />;
   if (isError)   return <ErrorState onRetry={() => refetch()} />;
 
-  // Estado vacío
-  if (!orders || orders.length === 0) {
+  if (typedOrders.length === 0) {
     return (
       <div className="min-h-screen bg-[#fff8f6] flex flex-col items-center justify-center gap-6 px-4">
         <div className="w-20 h-20 rounded-full bg-[#ffe9e4] flex items-center justify-center">
@@ -226,18 +204,8 @@ export const OrdersPage: React.FC = () => {
     );
   }
 
-  const typedOrders = orders as Order[];
-
-  // Auto-select first order once data loads
-  useEffect(() => {
-    if (selectedId === null && typedOrders.length > 0) {
-      setSelectedId(typedOrders[0].id);
-    }
-  }, [typedOrders, selectedId]);
-
   const selectedOrder = typedOrders.find((o) => o.id === selectedId) ?? typedOrders[0];
 
-  // Icono por estado
   const StatusIcon: Record<OrderStatus, React.ReactNode> = {
     PENDIENTE:  <Clock className="w-4 h-4" />,
     CONFIRMADO: <CheckCircle2 className="w-4 h-4" />,
@@ -251,7 +219,6 @@ export const OrdersPage: React.FC = () => {
     <div className="min-h-screen bg-[#fff8f6]">
       <main className="pt-[80px] pb-16 px-4 md:px-10 max-w-[1280px] mx-auto">
 
-        {/* Page header */}
         <div className="mb-10">
           <h1 className="text-[32px] font-bold leading-[1.2] tracking-[-0.01em] text-[#281814]">
             Mis Pedidos
@@ -261,15 +228,13 @@ export const OrdersPage: React.FC = () => {
           </p>
         </div>
 
-        {/* 12-col grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
 
-          {/* Orders list — 7 cols */}
           <div className="lg:col-span-7 space-y-6">
             {typedOrders.map((order) => {
-              const status   = order.estado as OrderStatus;
-              const total    = calcTotal(order);
-              const isActive = status !== 'ENTREGADO' && status !== 'CANCELADO';
+              const status     = order.estado_codigo as OrderStatus;
+              const total      = calcTotal(order);
+              const isActive   = status !== 'ENTREGADO' && status !== 'CANCELADO';
               const isSelected = order.id === selectedId;
 
               return (
@@ -284,19 +249,13 @@ export const OrdersPage: React.FC = () => {
                         : 'bg-white border-[#e5beb5] hover:border-[#b22300]/30'
                   }`}
                 >
-                  {/* Top row */}
                   <div className="flex flex-wrap justify-between items-start gap-4">
                     <div>
-                      {/* Status label */}
                       <span className={`block text-[12px] font-bold uppercase tracking-[0.05em] mb-1 ${STATUS_TEXT[status]}`}>
                         {STATUS_LABEL[status]}
                       </span>
-                      <h3 className="text-lg font-semibold text-[#281814]">
-                        #ORD-{order.id}
-                      </h3>
-                      <p className="text-sm text-[#5c403a]">
-                        {formatDate(order.created_at)}
-                      </p>
+                      <h3 className="text-lg font-semibold text-[#281814]">#ORD-{order.id}</h3>
+                      <p className="text-sm text-[#5c403a]">{formatDate(order.created_at)}</p>
                     </div>
                     <div className="text-right">
                       <span className={`text-2xl font-bold ${isActive ? 'text-[#b22300]' : 'text-[#281814]'}`}>
@@ -305,9 +264,7 @@ export const OrdersPage: React.FC = () => {
                       <button
                         onClick={(e) => { e.stopPropagation(); setSelectedId(order.id); }}
                         className={`mt-1 flex items-center gap-1 text-[12px] font-bold uppercase tracking-[0.05em] transition-colors ${
-                          isActive
-                            ? 'text-[#b22300] hover:underline'
-                            : 'text-[#5c403a] hover:text-[#b22300]'
+                          isActive ? 'text-[#b22300] hover:underline' : 'text-[#5c403a] hover:text-[#b22300]'
                         }`}
                       >
                         Ver Detalle
@@ -316,32 +273,19 @@ export const OrdersPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Product thumbnails for active orders */}
-                  {isActive && order.items && order.items.length > 0 && (
-                    <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-                      {order.items.map((item, idx) => (
-                        <div
+                  {isActive && order.detalles && order.detalles.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {order.detalles.map((item, idx) => (
+                        <span
                           key={idx}
-                          className="w-12 h-12 rounded-lg bg-[#fadcd5] flex-shrink-0 overflow-hidden flex items-center justify-center"
-                          title={item.nombre_snapshot ?? item.producto?.nombre ?? `Producto #${item.producto_id}`}
+                          className="text-[11px] font-semibold bg-[#fadcd5] text-[#8b1900] px-2 py-0.5 rounded-full"
                         >
-                          {item.producto?.imagenes_url?.[0] ? (
-                            <img
-                              src={item.producto.imagenes_url[0]}
-                              alt={item.nombre_snapshot ?? ''}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-[10px] font-bold text-[#b22300]/50 text-center leading-tight px-1">
-                              {(item.nombre_snapshot ?? `#${item.producto_id}`).slice(0, 4)}
-                            </span>
-                          )}
-                        </div>
+                          {item.nombre_snapshot} x{item.cantidad}
+                        </span>
                       ))}
                     </div>
                   )}
 
-                  {/* Icon badge bottom-right */}
                   <div className={`mt-3 flex justify-end text-sm ${STATUS_TEXT[status]} opacity-60`}>
                     {StatusIcon[status]}
                   </div>
@@ -350,7 +294,6 @@ export const OrdersPage: React.FC = () => {
             })}
           </div>
 
-          {/* Detail sidebar — 5 cols */}
           <div className="lg:col-span-5">
             {selectedOrder && (
               <OrderDetailSidebar
