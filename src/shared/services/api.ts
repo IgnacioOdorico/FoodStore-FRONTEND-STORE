@@ -20,8 +20,10 @@ apiClient.interceptors.response.use(
   (error) => {
     const status = error.response?.status;
 
-    if (status === 401) {
+    const url = error.config?.url || '';
+    if (status === 401 && !url.includes('/auth/')) {
       // Token expirado o no autenticado -> forzar login
+      // Evitamos redireccionar en endpoints de auth (/auth/me, /auth/token) para evitar loops
       window.location.href = '/login';
     }
 

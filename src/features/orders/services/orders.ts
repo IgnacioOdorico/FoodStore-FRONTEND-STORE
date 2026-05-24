@@ -6,7 +6,6 @@ export const ordersService = {
 
   getById: (id: number) => apiFetch<Order>(`/pedidos/${id}`),
 
-  // Crea un pedido desde el carrito
   create: (payload: CreateOrderPayload) =>
     apiFetch('/pedidos/', {
       method: 'POST',

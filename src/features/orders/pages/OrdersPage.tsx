@@ -1,35 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ordersService } from '../services/orders';
+import { productsService } from '../../products/services/products';
 import { LoadingState, ErrorState } from '../../../shared/ui/States';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, ChevronRight, X, CheckCircle2, Clock, Truck, ChefHat, PackageCheck, XCircle } from 'lucide-react';
 import type { Order, OrderStatus } from '../types/order';
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
-  PENDIENTE:  'Pendiente',
+  PENDIENTE: 'Pendiente',
   CONFIRMADO: 'Confirmado',
-  EN_PREP:    'En Preparación',
-  EN_CAMINO:  'En Camino',
-  ENTREGADO:  'Entregado',
-  CANCELADO:  'Cancelado',
+  EN_PREP: 'En Preparación',
+  EN_CAMINO: 'En Camino',
+  ENTREGADO: 'Entregado',
+  CANCELADO: 'Cancelado',
 };
 
 const STATUS_TEXT: Record<OrderStatus, string> = {
-  PENDIENTE:  'text-amber-600',
+  PENDIENTE: 'text-amber-600',
   CONFIRMADO: 'text-indigo-600',
-  EN_PREP:    'text-[#b22300]',
-  EN_CAMINO:  'text-orange-500',
-  ENTREGADO:  'text-[#5c403a]',
-  CANCELADO:  'text-[#ba1a1a]',
+  EN_PREP: 'text-[#b22300]',
+  EN_CAMINO: 'text-orange-500',
+  ENTREGADO: 'text-[#5c403a]',
+  CANCELADO: 'text-[#ba1a1a]',
 };
 
 const TIMELINE_STEPS: { key: OrderStatus; label: string; detail: string }[] = [
-  { key: 'PENDIENTE',  label: 'Pedido Recibido',  detail: 'Recibimos tu orden correctamente.' },
-  { key: 'CONFIRMADO', label: 'Confirmado',        detail: 'El local confirmó tu pedido.' },
-  { key: 'EN_PREP',    label: 'En Preparación',   detail: 'El chef está preparando tus platos.' },
-  { key: 'EN_CAMINO',  label: 'En Camino',         detail: 'Tu pedido está en camino.' },
-  { key: 'ENTREGADO',  label: 'Entregado',         detail: '¡Tu pedido fue entregado!' },
+  { key: 'PENDIENTE', label: 'Pedido Recibido', detail: 'Recibimos tu orden correctamente.' },
+  { key: 'CONFIRMADO', label: 'Confirmado', detail: 'El local confirmó tu pedido.' },
+  { key: 'EN_PREP', label: 'En Preparación', detail: 'El chef está preparando tus platos.' },
+  { key: 'EN_CAMINO', label: 'En Camino', detail: 'Tu pedido está en camino.' },
+  { key: 'ENTREGADO', label: 'Entregado', detail: '¡Tu pedido fue entregado!' },
 ];
 
 const STATUS_ORDER: OrderStatus[] = ['PENDIENTE', 'CONFIRMADO', 'EN_PREP', 'EN_CAMINO', 'ENTREGADO', 'CANCELADO'];
@@ -75,7 +76,7 @@ const OrderDetailSidebar: React.FC<SidebarProps> = ({ order, onCancel, isCancell
       {!cancelled ? (
         <div className="mb-10 space-y-6">
           {TIMELINE_STEPS.map((step, idx) => {
-            const done    = currentStep >= idx;
+            const done = currentStep >= idx;
             const current = currentStep === idx;
             return (
               <div key={step.key} className="flex gap-4 relative">
@@ -109,6 +110,7 @@ const OrderDetailSidebar: React.FC<SidebarProps> = ({ order, onCancel, isCancell
         </div>
       )}
 
+      {/* Items */}
       <div className="border-t border-[#e5beb5] pt-4 space-y-2">
         {(order.detalles || []).map((item, idx) => (
           <div key={idx} className="flex justify-between text-sm">
@@ -168,14 +170,18 @@ export const OrdersPage: React.FC = () => {
     queryFn:  ordersService.getAll,
   });
 
+  const { data: products } = useQuery({
+    queryKey: ['products'],
+    queryFn: productsService.getAll,
+  });
+
   const cancelMutation = useMutation({
     mutationFn: (id: number) => ordersService.cancel(id),
     onSuccess:  () => queryClient.invalidateQueries({ queryKey: ['orders'] }),
   });
 
-  const typedOrders = (orders ?? []) as Order[];
+  const typedOrders = (orders || []) as Order[];
 
-  // Auto-selecciona el primer pedido cuando cargan los datos
   useEffect(() => {
     if (selectedId === null && typedOrders.length > 0) {
       setSelectedId(typedOrders[0].id);
@@ -206,19 +212,21 @@ export const OrdersPage: React.FC = () => {
 
   const selectedOrder = typedOrders.find((o) => o.id === selectedId) ?? typedOrders[0];
 
+  // Iconos segun el estado 
   const StatusIcon: Record<OrderStatus, React.ReactNode> = {
-    PENDIENTE:  <Clock className="w-4 h-4" />,
+    PENDIENTE: <Clock className="w-4 h-4" />,
     CONFIRMADO: <CheckCircle2 className="w-4 h-4" />,
-    EN_PREP:    <ChefHat className="w-4 h-4" />,
-    EN_CAMINO:  <Truck className="w-4 h-4" />,
-    ENTREGADO:  <PackageCheck className="w-4 h-4" />,
-    CANCELADO:  <XCircle className="w-4 h-4" />,
+    EN_PREP: <ChefHat className="w-4 h-4" />,
+    EN_CAMINO: <Truck className="w-4 h-4" />,
+    ENTREGADO: <PackageCheck className="w-4 h-4" />,
+    CANCELADO: <XCircle className="w-4 h-4" />,
   };
 
   return (
     <div className="min-h-screen bg-[#fff8f6]">
       <main className="pt-[80px] pb-16 px-4 md:px-10 max-w-[1280px] mx-auto">
 
+        {/* Header de las paginas */}
         <div className="mb-10">
           <h1 className="text-[32px] font-bold leading-[1.2] tracking-[-0.01em] text-[#281814]">
             Mis Pedidos
@@ -241,13 +249,12 @@ export const OrdersPage: React.FC = () => {
                 <div
                   key={order.id}
                   onClick={() => setSelectedId(order.id)}
-                  className={`rounded-xl p-6 border transition-all duration-200 cursor-pointer hover:shadow-md group ${
-                    isSelected
-                      ? 'border-[#b22300]/40 shadow-md ring-2 ring-[#b22300]/10'
-                      : isActive
-                        ? 'bg-[#fff0ed] border-[#e5beb5] shadow-sm'
-                        : 'bg-white border-[#e5beb5] hover:border-[#b22300]/30'
-                  }`}
+                  className={`rounded-xl p-6 border transition-all duration-200 cursor-pointer hover:shadow-md group ${isSelected
+                    ? 'border-[#b22300]/40 shadow-md ring-2 ring-[#b22300]/10'
+                    : isActive
+                      ? 'bg-[#fff0ed] border-[#e5beb5] shadow-sm'
+                      : 'bg-white border-[#e5beb5] hover:border-[#b22300]/30'
+                    }`}
                 >
                   <div className="flex flex-wrap justify-between items-start gap-4">
                     <div>
@@ -294,6 +301,7 @@ export const OrdersPage: React.FC = () => {
             })}
           </div>
 
+          {/* Detalles del sidebar */}
           <div className="lg:col-span-5">
             {selectedOrder && (
               <OrderDetailSidebar

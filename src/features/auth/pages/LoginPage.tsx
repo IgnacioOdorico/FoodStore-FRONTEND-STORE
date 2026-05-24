@@ -1,24 +1,17 @@
 import { useState, type ChangeEvent, type SyntheticEvent } from 'react';
 import { useAuthStore } from '../../../store/useAuthStore';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
-
-// Accesos de test - credenciales del seed del backend
-const DEMO_USERS = [
-  { email: 'admin@nachopizza.com',   pass: 'Admin1234!',    role: 'Admin',   cls: 'bg-[#ffdad2] text-[#8b1900]' },
-  { email: 'pedidos@nachopizza.com', pass: 'Pedidos1234!',  role: 'Cajero',  cls: 'bg-[#dae2fd] text-[#3f465c]' },
-  { email: 'juan@ejemplo.com',       pass: 'Juan1234!',     role: 'Cliente', cls: 'bg-[#d1fae5] text-[#065f46]' },
-];
+import { Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 
 export const LoginPage = () => {
-  const [email,     setEmail]     = useState('');
-  const [password,  setPassword]  = useState('');
-  const [showPass,  setShowPass]  = useState(false);
-  const [remember,  setRemember]  = useState(false);
-  const [error,     setError]     = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPass, setShowPass] = useState(false);
+  const [remember, setRemember] = useState(false);
+  const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuthStore();
-  const navigate  = useNavigate();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -38,12 +31,6 @@ export const LoginPage = () => {
     navigate('/products');
   };
 
-  const quickLogin = (qEmail: string, qPass: string) => {
-    setEmail(qEmail);
-    setPassword(qPass);
-    setError('');
-  };
-
   return (
     <div
       className="min-h-screen flex flex-col"
@@ -60,10 +47,18 @@ export const LoginPage = () => {
       <header className="fixed top-0 left-0 w-full z-50 bg-[#fff8f6]/80 backdrop-blur-md shadow-sm">
         <div className="flex justify-between items-center px-4 h-16 max-w-[1280px] mx-auto">
           <span className="text-2xl font-black text-[#b22300]">FoodStore</span>
+          <button
+            type="button"
+            onClick={() => navigate('/products')}
+            className="flex items-center gap-1.5 text-sm font-semibold text-[#5c403a] hover:text-[#b22300] transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Volver a la tienda
+          </button>
         </div>
       </header>
 
-      {/* Centered glass panel */}
+
       <main className="flex-grow flex items-center justify-center pt-16 px-4 py-10">
         <div
           className="w-full max-w-[480px] rounded-xl shadow-lg border border-white/20 p-10 my-10"
@@ -72,7 +67,7 @@ export const LoginPage = () => {
             backgroundColor: 'rgba(255,248,246,0.88)',
           }}
         >
-          {/* Heading */}
+          {/* Head */}
           <div className="text-center mb-10">
             <h1 className="text-[32px] font-bold leading-[1.2] tracking-[-0.01em] text-[#281814] mb-1">
               Bienvenido de nuevo
@@ -80,7 +75,7 @@ export const LoginPage = () => {
             <p className="text-sm text-[#5c403a]">Inicia sesión para descubrir nuevos sabores</p>
           </div>
 
-          {/* Form */}
+          {/* Formulario */}
           <form onSubmit={handleSubmit} className="space-y-6">
 
             {/* Email */}
@@ -103,7 +98,7 @@ export const LoginPage = () => {
               </div>
             </div>
 
-            {/* Password */}
+            {/* Clave */}
             <div className="space-y-1.5">
               <label className="block text-[12px] font-bold uppercase tracking-[0.05em] text-[#5c403a] px-1" htmlFor="login-password">
                 Contraseña
@@ -131,7 +126,7 @@ export const LoginPage = () => {
               </div>
             </div>
 
-            {/* Recordarme + ¿Olvidaste? */}
+            {/* si te falla la memoria */}
             <div className="flex items-center justify-between py-1">
               <label className="flex items-center gap-2 cursor-pointer group select-none">
                 <input
@@ -171,40 +166,28 @@ export const LoginPage = () => {
             </button>
           </form>
 
-          {/* Separador */}
-          <div className="relative flex items-center my-8">
-            <div className="flex-grow border-t border-[#e5beb5]" />
-            <span className="flex-shrink mx-4 text-[12px] font-bold uppercase tracking-[0.05em] text-[#907068]">
-              Accesos de prueba
-            </span>
-            <div className="flex-grow border-t border-[#e5beb5]" />
-          </div>
-
-          {/* Demo users */}
-          <div className="flex flex-col gap-2">
-            {DEMO_USERS.map((u) => (
-              <button
-                key={u.email}
-                type="button"
-                onClick={() => quickLogin(u.email, u.pass)}
-                className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold transition-all hover:scale-[1.02] active:scale-95 ${u.cls}`}
-              >
-                <span className="font-mono">{u.email}</span>
-                <span className="text-[9px] font-black uppercase tracking-widest opacity-70">
-                  {u.role}
-                </span>
-              </button>
-            ))}
-          </div>
-
           {/* Crear cuenta */}
-          <div className="mt-8 text-center">
+          <div className="mt-8 text-center pt-6 border-t border-[#e5beb5]">
             <p className="text-sm text-[#5c403a]">
               ¿No tenés una cuenta?{' '}
-              <button type="button" className="text-[#b22300] font-bold hover:underline">
+              <button
+                type="button"
+                onClick={() => navigate('/register')}
+                className="text-[#b22300] font-bold hover:underline"
+              >
                 Regístrate gratis
               </button>
             </p>
+          </div>
+
+          {/* Acceso staff */}
+          <div className="mt-4 text-center">
+            <a
+              href="http://localhost:5173/login"
+              className="text-xs text-[#907068] hover:text-[#5c403a] hover:underline transition-colors"
+            >
+              ¿Sos del staff? Accedé aquí
+            </a>
           </div>
         </div>
       </main>
