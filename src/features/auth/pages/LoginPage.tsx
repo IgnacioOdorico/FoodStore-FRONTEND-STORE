@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent, type SyntheticEvent } from 'react';
 import { useAuthStore } from '../../../store/useAuthStore';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -47,6 +47,14 @@ export const LoginPage = () => {
       <header className="fixed top-0 left-0 w-full z-50 bg-[#fff8f6]/80 backdrop-blur-md shadow-sm">
         <div className="flex justify-between items-center px-4 h-16 max-w-[1280px] mx-auto">
           <span className="text-2xl font-black text-[#b22300]">FoodStore</span>
+          <button
+            type="button"
+            onClick={() => navigate('/products')}
+            className="flex items-center gap-1.5 text-sm font-semibold text-[#5c403a] hover:text-[#b22300] transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Volver a la tienda
+          </button>
         </div>
       </header>
 
@@ -170,6 +178,16 @@ export const LoginPage = () => {
                 Regístrate gratis
               </button>
             </p>
+          </div>
+
+          {/* Acceso staff */}
+          <div className="mt-4 text-center">
+            <a
+              href="http://localhost:5173/login"
+              className="text-xs text-[#907068] hover:text-[#5c403a] hover:underline transition-colors"
+            >
+              ¿Sos del staff? Accedé aquí
+            </a>
           </div>
         </div>
       </main>
