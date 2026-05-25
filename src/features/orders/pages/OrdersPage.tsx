@@ -101,12 +101,26 @@ const OrderDetailSidebar: React.FC<SidebarProps> = ({ order, onCancel, isCancell
           })}
         </div>
       ) : (
-        <div className="mb-6 flex items-center gap-3 p-4 bg-red-50 rounded-xl border border-red-200">
-          <XCircle className="w-6 h-6 text-[#ba1a1a] flex-shrink-0" />
-          <div>
-            <p className="font-bold text-[#ba1a1a] text-sm">Pedido cancelado</p>
-            <p className="text-xs text-red-400 mt-0.5">Este pedido fue cancelado.</p>
+        <div className="mb-6 p-4 bg-red-50 rounded-xl border border-red-200">
+          <div className="flex items-center gap-3">
+            <XCircle className="w-6 h-6 text-[#ba1a1a] flex-shrink-0" />
+            <div>
+              <p className="font-bold text-[#ba1a1a] text-sm">Pedido cancelado</p>
+              <p className="text-xs text-red-400 mt-0.5">Este pedido fue cancelado.</p>
+            </div>
           </div>
+          {(() => {
+            const cancelEntry = order.historial?.find(h => h.estado_hacia === 'CANCELADO');
+            if (cancelEntry?.motivo) {
+              return (
+                <div className="mt-3 pt-3 border-t border-red-200">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-[#ba1a1a]/60 mb-1">Motivo</p>
+                  <p className="text-sm text-[#ba1a1a] font-medium">{cancelEntry.motivo}</p>
+                </div>
+              );
+            }
+            return null;
+          })()}
         </div>
       )}
 
