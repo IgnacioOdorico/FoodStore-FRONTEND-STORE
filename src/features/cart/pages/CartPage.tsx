@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCartStore } from '../store/useCartStore';
 import { ordersService } from '../../orders/services/orders';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, ShoppingBag, ArrowLeft, Minus, Plus, ArrowRight, Info } from 'lucide-react';
+import { Trash2, ShoppingBag, ArrowLeft, Minus, Plus, ArrowRight, Info, MapPin, Store } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { direccionesService } from '../../../shared/services/direcciones';
 
 export const CartPage: React.FC = () => {
   const items        = useCartStore((s) => s.items);
@@ -12,19 +14,38 @@ export const CartPage: React.FC = () => {
   const getTotal     = useCartStore((s) => s.getTotal);
   const [isLoading, setIsLoading] = useState(false);
   const [error,     setError]     = useState('');
+  const [modalidadEnvio, setModalidadEnvio] = useState<'RETIRO' | 'ENVIO'>('RETIRO');
+  const [direccionId, setDireccionId] = useState<number | null>(null);
   const navigate = useNavigate();
+
+  const { data: direcciones } = useQuery({
+    queryKey: ['direcciones'],
+    queryFn: direccionesService.getAll,
+  });
+
+  useEffect(() => {
+    if (direcciones && direcciones.length > 0 && !direccionId) {
+      const principal = direcciones.find(d => d.es_principal);
+      setDireccionId(principal ? principal.id : direcciones[0].id);
+    }
+  }, [direcciones, direccionId]);
 
   const subtotal = getTotal();
 
   const handleConfirm = async () => {
     if (items.length === 0) return;
+    if (modalidadEnvio === 'ENVIO' && !direccionId) {
+      setError('Debés seleccionar una dirección para el envío');
+      return;
+    }
+    
     setIsLoading(true);
     setError('');
 
     const payload = {
       forma_pago_codigo: 'EFECTIVO',
       notas: null,
-      direccion_id: null,
+      direccion_id: modalidadEnvio === 'ENVIO' ? direccionId : null,
       detalles: items.map((i) => ({
         producto_id: i.producto.id!,
         cantidad: i.cantidad,
@@ -166,7 +187,59 @@ export const CartPage: React.FC = () => {
           {/* ── Sidebar Order Summary ── */}
           <aside className="w-full lg:w-[380px] flex-shrink-0">
             <div className="bg-white rounded-xl border border-[#e5beb5]/40 shadow-[0_4px_20px_rgba(15,23,42,0.08)] p-6 sticky top-20">
-              <h2 className="font-bold text-[#281814] text-lg mb-6">Resumen del Pedido</h2>
+              <h2 className="font-bold text-[#281814] text-lg mb-4">Modalidad de entrega</h2>
+              
+              <div className="flex gap-2 mb-6">
+                <button
+                  onClick={() => { setModalidadEnvio('RETIRO'); setError(''); }}
+                  className={`flex-1 py-2.5 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 border transition-all ${
+                    modalidadEnvio === 'RETIRO'
+                      ? 'bg-[#ffe9e4] border-[#b22300] text-[#b22300]'
+                      : 'bg-white border-[#e5beb5] text-[#5c403a] hover:bg-[#fff8f6]'
+                  }`}
+                >
+                  <Store className="w-4 h-4" />
+                  Retiro
+                </button>
+                <button
+                  onClick={() => { setModalidadEnvio('ENVIO'); setError(''); }}
+                  className={`flex-1 py-2.5 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 border transition-all ${
+                    modalidadEnvio === 'ENVIO'
+                      ? 'bg-[#ffe9e4] border-[#b22300] text-[#b22300]'
+                      : 'bg-white border-[#e5beb5] text-[#5c403a] hover:bg-[#fff8f6]'
+                  }`}
+                >
+                  <MapPin className="w-4 h-4" />
+                  Envío
+                </button>
+              </div>
+
+              {modalidadEnvio === 'ENVIO' && (
+                <div className="mb-6">
+                  <label className="text-[12px] font-bold uppercase tracking-[0.05em] text-[#5c403a] mb-1.5 block">
+                    Dirección de envío
+                  </label>
+                  {direcciones && direcciones.length > 0 ? (
+                    <select
+                      value={direccionId || ''}
+                      onChange={(e) => { setDireccionId(Number(e.target.value)); setError(''); }}
+                      className="w-full h-11 px-3 bg-[#fff0ed] border border-[#e5beb5] rounded-lg text-sm text-[#281814] focus:outline-none focus:ring-2 focus:ring-[#b22300]/20 focus:border-[#b22300]"
+                    >
+                      {direcciones.map(d => (
+                        <option key={d.id} value={d.id}>
+                          {d.alias ? `${d.alias} - ` : ''}{d.linea1}, {d.ciudad}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div className="text-xs text-[#ba1a1a] bg-[#ffdad6] p-3 rounded-lg border border-[#ba1a1a]/20">
+                      No tenés direcciones guardadas. Podés agregar una yendo a tu <strong>Perfil</strong>.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <h2 className="font-bold text-[#281814] text-lg mb-6 pt-4 border-t border-[#e5beb5]">Resumen del Pedido</h2>
 
               <div className="space-y-4 mb-6">
                 <div className="flex justify-between items-center">

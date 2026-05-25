@@ -6,6 +6,7 @@ import {
   User, Mail, Phone, ShieldCheck, Bell, ChevronRight,
   LogOut, Clock, Lock, Eye, EyeOff, X,
 } from 'lucide-react';
+import { SeccionDirecciones } from '../components/SeccionDirecciones';
 
 const ROLE_STYLE: Record<string, string> = {
   ADMIN:    'bg-[#ffdad2] text-[#8b1900]',
@@ -475,6 +476,9 @@ export const ProfilePage: React.FC = () => {
             <ChevronRight className="w-5 h-5 text-[#004b72]" />
           </div>
         </div>
+
+        {/* ── Address section ── */}
+        <SeccionDirecciones />
 
         {/* ── Preferences section ── */}
         <section className="mt-10">

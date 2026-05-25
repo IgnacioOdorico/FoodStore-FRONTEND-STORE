@@ -145,6 +145,29 @@ const OrderDetailSidebar: React.FC<SidebarProps> = ({ order, onCancel, isCancell
         </div>
       </div>
 
+      {/* Entrega */}
+      <div className="mt-4 p-4 bg-white rounded-lg border border-[#e5beb5] text-sm text-[#5c403a] shadow-sm">
+        <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#907068] mb-2 flex items-center gap-1.5">
+          <Truck className="w-3.5 h-3.5" /> Entrega
+        </h3>
+        {order.direccion_id && order.direccion ? (
+          <div>
+            <p className="font-semibold text-[#281814]">Envío a domicilio</p>
+            <p className="mt-0.5 text-xs">
+              {order.direccion.alias ? <span className="font-semibold">{order.direccion.alias} - </span> : ''}
+              {order.direccion.linea1}
+              {order.direccion.linea2 ? `, ${order.direccion.linea2}` : ''}
+            </p>
+            <p className="text-xs">{order.direccion.ciudad}{order.direccion.provincia ? `, ${order.direccion.provincia}` : ''}</p>
+          </div>
+        ) : (
+          <div>
+            <p className="font-semibold text-[#281814]">Retiro en sucursal</p>
+            <p className="mt-0.5 text-xs">Te esperamos en nuestro local para retirar tu pedido.</p>
+          </div>
+        )}
+      </div>
+
       {order.forma_pago_codigo && (
         <div className="mt-4 flex items-center gap-2 text-sm text-[#5c403a]">
           <span className="text-[12px] font-bold uppercase tracking-[0.05em]">Pago:</span>
