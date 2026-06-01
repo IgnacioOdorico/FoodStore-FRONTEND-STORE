@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ordersService } from '../services/orders';
 import { productsService } from '../../products/services/products';
@@ -205,8 +205,38 @@ export const OrdersPage: React.FC = () => {
   const { data: orders, isLoading, isError, refetch } = useQuery({
     queryKey: ['orders'],
     queryFn:  ordersService.getAll,
+    refetchInterval: 60_000, // se conserva por si falla el websocket.
   });
 
+  // ------------WebSocket ------------------------------//
+  const wsRef = useRef<WebSocket | null>(null);
+  const reconnectTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+    const wsUrl = BASE_URL.replace(/^http/, 'ws') + '/api/v1/pedidos/ws';
+
+    const connect = () => {
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+
+      ws.onmessage = () => {
+        queryClient.invalidateQueries({ queryKey: ['orders'] });
+      };
+
+      ws.onclose = () => {
+        reconnectTimeout.current = setTimeout(connect, 3_000);
+      };
+    };
+
+    connect();
+
+    return () => {
+      if (reconnectTimeout.current) clearTimeout(reconnectTimeout.current);
+      wsRef.current?.close();
+    };
+  }, [queryClient]);
+  
   const { data: products } = useQuery({
     queryKey: ['products'],
     queryFn: productsService.getAll,
