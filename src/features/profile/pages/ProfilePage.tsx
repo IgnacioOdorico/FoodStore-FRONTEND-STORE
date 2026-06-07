@@ -3,34 +3,10 @@ import { useAuthStore } from '../../../store/useAuthStore';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../../auth/services/auth';
 import {
-  User, Mail, Phone, ShieldCheck, Bell, ChevronRight,
+  User, Mail, Phone, ShieldCheck, ChevronRight,
   LogOut, Clock, Lock, Eye, EyeOff, X,
 } from 'lucide-react';
-
-const ROLE_STYLE: Record<string, string> = {
-  ADMIN:    'bg-[#ffdad2] text-[#8b1900]',
-  STOCK:    'bg-[#dae2fd] text-[#3f465c]',
-  PEDIDOS:  'bg-[#cce5ff] text-[#004b72]',
-  CLIENT:   'bg-[#d1fae5] text-[#065f46]',
-};
-
-const Toggle: React.FC<{ checked: boolean; onChange: () => void }> = ({ checked, onChange }) => (
-  <button
-    type="button"
-    role="switch"
-    aria-checked={checked}
-    onClick={onChange}
-    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#b22300]/30 ${
-      checked ? 'bg-[#b22300]' : 'bg-[#e5beb5]'
-    }`}
-  >
-    <span
-      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ${
-        checked ? 'translate-x-5' : 'translate-x-0'
-      }`}
-    />
-  </button>
-);
+import { SeccionDirecciones } from '../components/SeccionDirecciones';
 
 /* ── Modal de cambio de contraseña ── */
 interface ChangePasswordModalProps {
@@ -224,10 +200,6 @@ export const ProfilePage: React.FC = () => {
   const [apellido, setApellido] = useState(user?.apellido ?? '');
   const [celular,  setCelular]  = useState(user?.celular  ?? '');
 
-  const [notifEmail,   setNotifEmail]   = useState(true);
-  const [notifPedidos, setNotifPedidos] = useState(true);
-  const [dataShare,    setDataShare]    = useState(false);
-
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [saveError, setSaveError] = useState('');
   const [showPwdModal, setShowPwdModal] = useState(false);
@@ -335,18 +307,7 @@ export const ProfilePage: React.FC = () => {
             </div>
 
             <h2 className="text-2xl font-bold text-[#281814] mb-1">{fullName}</h2>
-            <p className="text-sm text-[#5c403a] mb-4">{user.email}</p>
-
-            <div className="flex flex-wrap gap-2 justify-center mb-6">
-              {user.roles.map((r) => (
-                <span
-                  key={r}
-                  className={`px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-widest ${ROLE_STYLE[r] ?? 'bg-[#ffe9e4] text-[#b22300]'}`}
-                >
-                  {r}
-                </span>
-              ))}
-            </div>
+            <p className="text-sm text-[#5c403a] mb-6">{user.email}</p>
 
             <div className="flex flex-col gap-2 w-full">
               <button
@@ -427,19 +388,6 @@ export const ProfilePage: React.FC = () => {
                   />
                 </div>
               </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[12px] font-bold uppercase tracking-[0.05em] text-[#5c403a]">
-                  Roles asignados
-                </label>
-                <div className="w-full h-12 px-4 bg-[#fadcd5]/40 border border-[#e5beb5] rounded-lg flex items-center justify-between">
-                  <span className="text-[#5c403a] text-base">{user.roles.join(', ')}</span>
-                  <Lock className="w-4 h-4 text-[#907068]/50" />
-                </div>
-                <p className="text-[11px] text-[#907068] italic mt-0.5">
-                  Campo de solo lectura. Contactá al administrador para modificar tus roles.
-                </p>
-              </div>
             </div>
           </div>
 
@@ -476,42 +424,8 @@ export const ProfilePage: React.FC = () => {
           </div>
         </div>
 
-        {/* ── Preferences section ── */}
-        <section className="mt-10">
-          <h3 className="text-lg font-semibold text-[#281814] mb-4">Preferencias</h3>
-          <div className="bg-white rounded-xl border border-[#e5beb5]/40 shadow-[0_4px_20px_rgba(15,23,42,0.08)] divide-y divide-[#e5beb5]/60">
-            <div className="p-6 flex items-center justify-between gap-4">
-              <div className="flex items-start gap-4">
-                <Bell className="w-5 h-5 text-[#b22300] mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-semibold text-[#281814]">Notificaciones por email</p>
-                  <p className="text-sm text-[#5c403a] mt-0.5">Recibí actualizaciones sobre el estado de tus pedidos.</p>
-                </div>
-              </div>
-              <Toggle checked={notifEmail} onChange={() => setNotifEmail((v) => !v)} />
-            </div>
-            <div className="p-6 flex items-center justify-between gap-4">
-              <div className="flex items-start gap-4">
-                <Bell className="w-5 h-5 text-[#b22300] mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-semibold text-[#281814]">Alertas de pedidos</p>
-                  <p className="text-sm text-[#5c403a] mt-0.5">Te avisamos cuando tu pedido cambia de estado.</p>
-                </div>
-              </div>
-              <Toggle checked={notifPedidos} onChange={() => setNotifPedidos((v) => !v)} />
-            </div>
-            <div className="p-6 flex items-center justify-between gap-4">
-              <div className="flex items-start gap-4">
-                <ShieldCheck className="w-5 h-5 text-[#b22300] mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-semibold text-[#281814]">Datos de uso anónimos</p>
-                  <p className="text-sm text-[#5c403a] mt-0.5">Compartir estadísticas anónimas para mejorar la experiencia.</p>
-                </div>
-              </div>
-              <Toggle checked={dataShare} onChange={() => setDataShare((v) => !v)} />
-            </div>
-          </div>
-        </section>
+        {/* ── Address section ── */}
+        <SeccionDirecciones />
       </main>
     </div>
   );

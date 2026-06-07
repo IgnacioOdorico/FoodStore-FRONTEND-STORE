@@ -12,6 +12,20 @@ export const ProductsPage: React.FC = () => {
   const search = searchParams.get('q') ?? '';
   const [selectedCategory, setSelectedCategory] = useState<string>('');
 
+  const scrollToProducts = () => {
+    setTimeout(() => {
+      document.getElementById('productos-section')?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  };
+
+  const handleCategoryClick = (keyword: string) => {
+    // Busca si existe una categoría real que contenga la palabra clave (ej: "Postres" o "Ensaladas")
+    // Esto evita que falle si en la BD se llama "Postres" pero el botón dice "Postres & Dulces"
+    const realCategory = allCategories.find(c => c.toLowerCase().includes(keyword.toLowerCase()));
+    setSelectedCategory(realCategory || keyword);
+    scrollToProducts();
+  };
+
   const { data: products, isLoading, isError, refetch } = useQuery({
     queryKey: ['products'],
     queryFn: productsService.getAll,
@@ -64,7 +78,14 @@ export const ProductsPage: React.FC = () => {
               <p className="text-white/80 text-sm mb-5 max-w-sm">
                 Ingredientes frescos, recetas artesanales, en tu puerta.
               </p>
-              <button className="bg-white text-[#b22300] font-bold px-6 py-3 rounded-lg w-fit text-sm hover:bg-[#fff0ed] active:scale-95 transition-all">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedCategory('');
+                  scrollToProducts();
+                }}
+                className="bg-white text-[#b22300] font-bold px-6 py-3 rounded-lg w-fit text-sm hover:bg-[#fff0ed] active:scale-95 transition-all"
+              >
                 Explorar catálogo
               </button>
             </div>
@@ -72,15 +93,27 @@ export const ProductsPage: React.FC = () => {
 
           {/* Mini cards */}
           <div className="md:col-span-4 grid grid-rows-2 gap-6">
-            <div className="relative overflow-hidden rounded-xl bg-[#dae2fd] group cursor-pointer h-[130px]">
+            <div 
+              className="relative overflow-hidden rounded-xl bg-[#dae2fd] group cursor-pointer h-[130px]"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCategoryClick('Postre');
+              }}
+            >
               <div className="absolute inset-0 flex flex-col justify-end p-5">
-                <h2 className="text-[#131b2e] font-black text-xl">Postres & Dulces</h2>
+                <h2 className="text-[#131b2e] font-black text-xl group-hover:scale-105 origin-left transition-transform">Postres & Dulces</h2>
                 <p className="text-[#131b2e]/70 text-sm">Repostería artesanal</p>
               </div>
             </div>
-            <div className="relative overflow-hidden rounded-xl bg-[#cce5ff] group cursor-pointer h-[130px]">
+            <div 
+              className="relative overflow-hidden rounded-xl bg-[#cce5ff] group cursor-pointer h-[130px]"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCategoryClick('Ensalada');
+              }}
+            >
               <div className="absolute inset-0 flex flex-col justify-end p-5">
-                <h2 className="text-[#001e31] font-black text-xl">Bowls Saludables</h2>
+                <h2 className="text-[#001e31] font-black text-xl group-hover:scale-105 origin-left transition-transform">Bowls Saludables</h2>
                 <p className="text-[#001e31]/70 text-sm">Directo del campo</p>
               </div>
             </div>
@@ -88,7 +121,7 @@ export const ProductsPage: React.FC = () => {
         </section>
 
         {/* ── Header de la grilla ── */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-5 mb-6">
+        <div id="productos-section" className="flex flex-col md:flex-row md:items-end justify-between gap-5 mb-6 scroll-mt-24">
           <div>
             <h2 className="text-[#281814] font-black text-3xl tracking-tight">Productos Frescos</h2>
             <p className="text-[#5c403a] text-sm mt-1">Selección especial para vos</p>

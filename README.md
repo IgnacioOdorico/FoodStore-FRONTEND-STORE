@@ -1,7 +1,5 @@
 # FoodStore — Store App (Frontend)
 
-Tienda pública del sistema FoodStore. Permite a los clientes explorar el catálogo de productos, ver detalles, armar su carrito y realizar pedidos, todo consumiendo la API REST del backend FastAPI.
-
 ---
 
 ## Tecnologías
@@ -143,3 +141,8 @@ El carrito usa el middleware `persist` de Zustand con `localStorage`. Al recarga
 - **`apiClient`**: instancia Axios con `baseURL` desde `VITE_API_URL` y `withCredentials: true` para enviar la cookie JWT.
 - **Interceptor de respuesta**: redirige automáticamente a `/login` en 401 y a `/forbidden` en 403.
 - **`apiFetch`**: helper de compatibilidad que mantiene la firma usada por los servicios existentes.
+
+---
+
+## Video del Parcial
+(https://www.youtube.com/watch?v=HCHS3oAsbC4)

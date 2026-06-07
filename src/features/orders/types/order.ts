@@ -1,3 +1,5 @@
+import type { Direccion } from '../../../shared/services/direcciones';
+
 export type OrderStatus =
   | 'PENDIENTE'
   | 'CONFIRMADO'
@@ -17,6 +19,15 @@ export interface OrderItem {
   created_at?: string;
 }
 
+export interface HistorialEntry {
+  id: number;
+  estado_desde: string | null;
+  estado_hacia: string;
+  usuario_id: number | null;
+  motivo: string | null;
+  created_at: string;
+}
+
 export interface Order {
   id: number;
   usuario_id?: number;
@@ -31,6 +42,8 @@ export interface Order {
   descuento?: number;
   costo_envio?: number;
   direccion_id?: number | null;
+  direccion?: Direccion | null;
+  historial?: HistorialEntry[];
 }
 
 export interface CreateOrderPayload {

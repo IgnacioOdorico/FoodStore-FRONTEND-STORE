@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ordersService } from '../services/orders';
 import { productsService } from '../../products/services/products';
+import { useWebSocket } from '../../../hooks/useWebSocket';
 import { LoadingState, ErrorState } from '../../../shared/ui/States';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, ChevronRight, X, CheckCircle2, Clock, Truck, ChefHat, PackageCheck, XCircle } from 'lucide-react';
@@ -101,12 +102,26 @@ const OrderDetailSidebar: React.FC<SidebarProps> = ({ order, onCancel, isCancell
           })}
         </div>
       ) : (
-        <div className="mb-6 flex items-center gap-3 p-4 bg-red-50 rounded-xl border border-red-200">
-          <XCircle className="w-6 h-6 text-[#ba1a1a] flex-shrink-0" />
-          <div>
-            <p className="font-bold text-[#ba1a1a] text-sm">Pedido cancelado</p>
-            <p className="text-xs text-red-400 mt-0.5">Este pedido fue cancelado.</p>
+        <div className="mb-6 p-4 bg-red-50 rounded-xl border border-red-200">
+          <div className="flex items-center gap-3">
+            <XCircle className="w-6 h-6 text-[#ba1a1a] flex-shrink-0" />
+            <div>
+              <p className="font-bold text-[#ba1a1a] text-sm">Pedido cancelado</p>
+              <p className="text-xs text-red-400 mt-0.5">Este pedido fue cancelado.</p>
+            </div>
           </div>
+          {(() => {
+            const cancelEntry = order.historial?.find(h => h.estado_hacia === 'CANCELADO');
+            if (cancelEntry?.motivo) {
+              return (
+                <div className="mt-3 pt-3 border-t border-red-200">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-[#ba1a1a]/60 mb-1">Motivo</p>
+                  <p className="text-sm text-[#ba1a1a] font-medium">{cancelEntry.motivo}</p>
+                </div>
+              );
+            }
+            return null;
+          })()}
         </div>
       )}
 
@@ -129,6 +144,29 @@ const OrderDetailSidebar: React.FC<SidebarProps> = ({ order, onCancel, isCancell
             ${total.toLocaleString('es-AR')}
           </span>
         </div>
+      </div>
+
+      {/* Entrega */}
+      <div className="mt-4 p-4 bg-white rounded-lg border border-[#e5beb5] text-sm text-[#5c403a] shadow-sm">
+        <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#907068] mb-2 flex items-center gap-1.5">
+          <Truck className="w-3.5 h-3.5" /> Entrega
+        </h3>
+        {order.direccion_id && order.direccion ? (
+          <div>
+            <p className="font-semibold text-[#281814]">Envío a domicilio</p>
+            <p className="mt-0.5 text-xs">
+              {order.direccion.alias ? <span className="font-semibold">{order.direccion.alias} - </span> : ''}
+              {order.direccion.linea1}
+              {order.direccion.linea2 ? `, ${order.direccion.linea2}` : ''}
+            </p>
+            <p className="text-xs">{order.direccion.ciudad}{order.direccion.provincia ? `, ${order.direccion.provincia}` : ''}</p>
+          </div>
+        ) : (
+          <div>
+            <p className="font-semibold text-[#281814]">Retiro en sucursal</p>
+            <p className="mt-0.5 text-xs">Te esperamos en nuestro local para retirar tu pedido.</p>
+          </div>
+        )}
       </div>
 
       {order.forma_pago_codigo && (
@@ -168,8 +206,86 @@ export const OrdersPage: React.FC = () => {
   const { data: orders, isLoading, isError, refetch } = useQuery({
     queryKey: ['orders'],
     queryFn:  ordersService.getAll,
+    refetchInterval: 60_000, // se conserva por si falla el websocket.
   });
 
+  // ─── WebSocket — actualizaciones en tiempo real ───────────────────────────
+  // El cliente es role:user — entra a su room de rol pero no recibe
+  // eventos generales. Para recibir actualizaciones de un pedido concreto
+  // debe llamar a subscribeToOrder(id), que une el socket a "order:{id}".
+  //
+  // WS_CONNECTED se emite al (re)conectar: aprovechamos ese evento para
+  // re-suscribirse a TODOS los pedidos activos, por si se perdieron
+  // eventos durante la desconexión.
+  //
+  // IMPORTANTE: subscribeToOrder/unsubscribeFromOrder se exponen via refs para
+  // evitar el error de Temporal Dead Zone (TDZ) que ocurre cuando el useCallback
+  // las referencia en sus deps siendo el resultado de la misma llamada a useWebSocket.
+  const TERMINAL: OrderStatus[] = ['ENTREGADO', 'CANCELADO'];
+
+  // Refs para acceder a las funciones del hook sin circular initialization.
+  const subscribeRef   = useRef<((id: number) => void) | null>(null);
+  const unsubscribeRef = useRef<((id: number) => void) | null>(null);
+
+  const handleMessage = useCallback(
+    (msg: import('../../../hooks/useWebSocket').WsMessage) => {
+      if (msg.event === 'WS_CONNECTED') {
+        // Al reconectar, re-suscribirse a todos los pedidos activos.
+        const activos = (orders || []).filter(
+          (o) => !TERMINAL.includes((o as Order).estado_codigo as OrderStatus),
+        );
+        activos.forEach((o) => subscribeRef.current?.((o as Order).id));
+        // Invalidar para tener datos frescos tras la reconexión.
+        queryClient.invalidateQueries({ queryKey: ['orders'] });
+        return;
+      }
+
+      const PEDIDO_EVENTS = [
+        'PEDIDO_NUEVO',
+        'PEDIDO_CONFIRMADO',
+        'PEDIDO_EN_PREPARACION',
+        'PEDIDO_EN_CAMINO',
+        'PEDIDO_ENTREGADO',
+        'PEDIDO_CANCELADO',
+      ];
+      if (PEDIDO_EVENTS.includes(msg.event)) {
+        queryClient.invalidateQueries({ queryKey: ['orders'] });
+
+        // Si el pedido llegó a estado terminal, desuscribirse de su room.
+        const payload = msg.data as { id?: number; estado_codigo?: string } | null;
+        if (
+          payload?.id &&
+          (msg.event === 'PEDIDO_ENTREGADO' || msg.event === 'PEDIDO_CANCELADO')
+        ) {
+          unsubscribeRef.current?.(payload.id);
+        }
+      }
+    },
+    // TERMINAL es estable (declarado en render pero siempre igual), orders cambia
+    // con los datos. subscribeRef/unsubscribeRef son refs estables → no van en deps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [orders, queryClient],
+  );
+
+  const { subscribeToOrder, unsubscribeFromOrder } = useWebSocket({ onMessage: handleMessage });
+
+  // Actualizar las refs cada vez que el hook retorna funciones nuevas (son estables
+  // por useCallback interno, pero lo hacemos igualmente para ser correctos).
+  subscribeRef.current   = subscribeToOrder;
+  unsubscribeRef.current = unsubscribeFromOrder;
+
+  // Suscribir a pedidos activos cuando carga la lista inicial.
+  // Cuando WS_CONNECTED llega (al reconectar) también se re-suscriben,
+  // por eso aquí solo cubrimos el caso de carga inicial con WS ya abierto.
+  useEffect(() => {
+    if (!orders) return;
+    const activos = (orders as Order[]).filter(
+      (o) => !TERMINAL.includes(o.estado_codigo as OrderStatus),
+    );
+    activos.forEach((o) => subscribeToOrder(o.id));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orders]);
+  
   const { data: products } = useQuery({
     queryKey: ['products'],
     queryFn: productsService.getAll,
