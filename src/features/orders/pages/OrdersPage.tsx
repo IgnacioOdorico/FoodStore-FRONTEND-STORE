@@ -5,14 +5,13 @@ import { productsService } from '../../products/services/products';
 import { useWebSocket } from '../../../hooks/useWebSocket';
 import { LoadingState, ErrorState } from '../../../shared/ui/States';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingBag, ChevronRight, X, CheckCircle2, Clock, Truck, ChefHat, PackageCheck, XCircle } from 'lucide-react';
+import { ShoppingBag, ChevronRight, X, CheckCircle2, Clock, ChefHat, PackageCheck, XCircle, Truck } from 'lucide-react';
 import type { Order, OrderStatus } from '../types/order';
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
   PENDIENTE: 'Pendiente',
   CONFIRMADO: 'Confirmado',
   EN_PREP: 'En Preparación',
-  EN_CAMINO: 'En Camino',
   ENTREGADO: 'Entregado',
   CANCELADO: 'Cancelado',
 };
@@ -21,7 +20,6 @@ const STATUS_TEXT: Record<OrderStatus, string> = {
   PENDIENTE: 'text-amber-600',
   CONFIRMADO: 'text-indigo-600',
   EN_PREP: 'text-[#b22300]',
-  EN_CAMINO: 'text-orange-500',
   ENTREGADO: 'text-[#5c403a]',
   CANCELADO: 'text-[#ba1a1a]',
 };
@@ -30,11 +28,10 @@ const TIMELINE_STEPS: { key: OrderStatus; label: string; detail: string }[] = [
   { key: 'PENDIENTE', label: 'Pedido Recibido', detail: 'Recibimos tu orden correctamente.' },
   { key: 'CONFIRMADO', label: 'Confirmado', detail: 'El local confirmó tu pedido.' },
   { key: 'EN_PREP', label: 'En Preparación', detail: 'El chef está preparando tus platos.' },
-  { key: 'EN_CAMINO', label: 'En Camino', detail: 'Tu pedido está en camino.' },
   { key: 'ENTREGADO', label: 'Entregado', detail: '¡Tu pedido fue entregado!' },
 ];
 
-const STATUS_ORDER: OrderStatus[] = ['PENDIENTE', 'CONFIRMADO', 'EN_PREP', 'EN_CAMINO', 'ENTREGADO', 'CANCELADO'];
+const STATUS_ORDER: OrderStatus[] = ['PENDIENTE', 'CONFIRMADO', 'EN_PREP', 'ENTREGADO', 'CANCELADO'];
 const CANCELLABLE: OrderStatus[] = ['PENDIENTE', 'CONFIRMADO'];
 
 const stepIndex = (status: OrderStatus) =>
@@ -244,7 +241,6 @@ export const OrdersPage: React.FC = () => {
         'PEDIDO_NUEVO',
         'PEDIDO_CONFIRMADO',
         'PEDIDO_EN_PREPARACION',
-        'PEDIDO_EN_CAMINO',
         'PEDIDO_ENTREGADO',
         'PEDIDO_CANCELADO',
       ];
@@ -333,7 +329,6 @@ export const OrdersPage: React.FC = () => {
     PENDIENTE: <Clock className="w-4 h-4" />,
     CONFIRMADO: <CheckCircle2 className="w-4 h-4" />,
     EN_PREP: <ChefHat className="w-4 h-4" />,
-    EN_CAMINO: <Truck className="w-4 h-4" />,
     ENTREGADO: <PackageCheck className="w-4 h-4" />,
     CANCELADO: <XCircle className="w-4 h-4" />,
   };
