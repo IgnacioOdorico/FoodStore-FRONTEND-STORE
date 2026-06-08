@@ -14,25 +14,21 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
-
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    const status = error.response?.status;
+    const httpStatus = error.response?.status;
+    const url: string = error.config?.url || '';
+    const isAuthEndpoint = url.includes('/auth/token');
 
-    const url = error.config?.url || '';
-    if (status === 401 && !url.includes('/auth/')) {
-      // Token expirado o no autenticado -> forzar login
-      // Evitamos redireccionar en endpoints de auth (/auth/me, /auth/token) para evitar loops
+    if (httpStatus === 401 && !isAuthEndpoint) {
       window.location.href = '/login';
     }
 
-    if (status === 403) {
-      // Autenticado pero sin permisos-> página de acceso denegado
+    if (httpStatus === 403) {
       window.location.href = '/forbidden';
     }
 
-    // Propaga el error para que cada servicio / useQuery lo maneje
     return Promise.reject(error);
   },
 );
