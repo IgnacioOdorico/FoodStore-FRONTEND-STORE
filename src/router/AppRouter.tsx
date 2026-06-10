@@ -9,6 +9,7 @@ import { ProductDetailPage } from '../features/products/pages/ProductDetailPage'
 import { CartPage } from '../features/cart/pages/CartPage';
 import { OrdersPage } from '../features/orders/pages/OrdersPage';
 import { ProfilePage } from '../features/profile/pages/ProfilePage';
+import { PaymentResultPage } from '../features/payments/pages/PaymentResultPage';
 
 import { Navbar } from '../shared/components/Navbar';
 import { ProtectedRoute } from './ProtectedRoute';
@@ -31,6 +32,7 @@ export const AppRouter = () => {
 
         <Route element={<ProtectedRoute allowedRoles={['CLIENT', 'ADMIN']} />}>
           <Route path="/orders" element={<OrdersPage />} />
+          <Route path="/orders/:pedidoId/:estado" element={<PaymentResultPage />} />
           <Route path="/profile" element={<ProfilePage />} />
         </Route>
 

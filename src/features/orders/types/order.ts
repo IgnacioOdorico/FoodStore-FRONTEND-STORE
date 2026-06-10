@@ -43,6 +43,20 @@ export interface Order {
   direccion_id?: number | null;
   direccion?: Direccion | null;
   historial?: HistorialEntry[];
+  pago?: Pago | null;
+}
+
+export interface Pago {
+  id: number;
+  pedido_id: number;
+  transaction_amount: number;
+  estado: string;                // "pendiente" | "aprobado" | "rechazado"
+  mp_payment_id?: number | null;
+  mp_status?: string | null;
+  mp_status_detail?: string | null;
+  payment_method_id?: string | null;
+  external_reference?: string;
+  created_at?: string;
 }
 
 export interface CreateOrderPayload {

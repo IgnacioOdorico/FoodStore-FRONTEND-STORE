@@ -19,13 +19,24 @@ apiClient.interceptors.response.use(
   (error) => {
     const httpStatus = error.response?.status;
     const url: string = error.config?.url || '';
-    const isAuthEndpoint = url.includes('/auth/token');
+    // Endpoints de sesión: el authStore maneja el 401 (set user=null) y la
+    // redirección la hace React Router vía ProtectedRoute. NO redirigir acá
+    // para estos, porque hacerlo con window.location.href provoca una recarga
+    // que vuelve a pedir /auth/me → 401 → recarga… (loop infinito en /login).
+    const isSessionEndpoint =
+      url.includes('/auth/token') ||
+      url.includes('/auth/me') ||
+      url.includes('/auth/register') ||
+      url.includes('/auth/logout');
 
-    if (httpStatus === 401 && !isAuthEndpoint) {
+    const path = window.location.pathname;
+    const onAuthPage = path.startsWith('/login') || path.startsWith('/register');
+
+    if (httpStatus === 401 && !isSessionEndpoint && !onAuthPage) {
       window.location.href = '/login';
     }
 
-    if (httpStatus === 403) {
+    if (httpStatus === 403 && !path.startsWith('/forbidden')) {
       window.location.href = '/forbidden';
     }
 
