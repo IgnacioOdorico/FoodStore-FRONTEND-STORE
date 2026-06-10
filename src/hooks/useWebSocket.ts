@@ -93,8 +93,8 @@ export function useWebSocket({
     const connect = () => {
       if (cancelled) return;
 
-      const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
-      const wsUrl = BASE_URL.replace(/^http/, 'ws') + '/api/v1/pedidos/ws';
+      const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api/v1';
+      const wsUrl = BASE_URL.replace(/^http/, 'ws') + '/pedidos/ws';
 
       const ws = new WebSocket(wsUrl);
       currentWs = ws;

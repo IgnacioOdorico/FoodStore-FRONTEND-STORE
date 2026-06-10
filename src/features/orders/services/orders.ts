@@ -7,13 +7,12 @@ export const ordersService = {
   getById: (id: number) => apiFetch<Order>(`/pedidos/${id}`),
 
   create: (payload: CreateOrderPayload) =>
-    apiFetch('/pedidos/', {
+    apiFetch<Order>('/pedidos/', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
 
   // El cliente puede cancelar solo desde PENDIENTE o CONFIRMADO
-  // El backend requiere body { motivo: string }
   cancel: (id: number, motivo = 'Cancelado por el cliente') =>
     apiFetch(`/pedidos/${id}/cancelar`, {
       method: 'PATCH',

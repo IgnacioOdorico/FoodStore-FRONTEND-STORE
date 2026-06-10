@@ -1,18 +1,17 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ordersService } from '../services/orders';
-import { productsService } from '../../products/services/products';
+import { paymentsService } from '../../payments/services/payments';
 import { useWebSocket } from '../../../hooks/useWebSocket';
 import { LoadingState, ErrorState } from '../../../shared/ui/States';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingBag, ChevronRight, X, CheckCircle2, Clock, Truck, ChefHat, PackageCheck, XCircle } from 'lucide-react';
+import { ShoppingBag, ChevronRight, X, CheckCircle2, Clock, ChefHat, PackageCheck, XCircle, Truck, CreditCard } from 'lucide-react';
 import type { Order, OrderStatus } from '../types/order';
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
   PENDIENTE: 'Pendiente',
   CONFIRMADO: 'Confirmado',
   EN_PREP: 'En Preparación',
-  EN_CAMINO: 'En Camino',
   ENTREGADO: 'Entregado',
   CANCELADO: 'Cancelado',
 };
@@ -21,7 +20,6 @@ const STATUS_TEXT: Record<OrderStatus, string> = {
   PENDIENTE: 'text-amber-600',
   CONFIRMADO: 'text-indigo-600',
   EN_PREP: 'text-[#b22300]',
-  EN_CAMINO: 'text-orange-500',
   ENTREGADO: 'text-[#5c403a]',
   CANCELADO: 'text-[#ba1a1a]',
 };
@@ -30,11 +28,10 @@ const TIMELINE_STEPS: { key: OrderStatus; label: string; detail: string }[] = [
   { key: 'PENDIENTE', label: 'Pedido Recibido', detail: 'Recibimos tu orden correctamente.' },
   { key: 'CONFIRMADO', label: 'Confirmado', detail: 'El local confirmó tu pedido.' },
   { key: 'EN_PREP', label: 'En Preparación', detail: 'El chef está preparando tus platos.' },
-  { key: 'EN_CAMINO', label: 'En Camino', detail: 'Tu pedido está en camino.' },
   { key: 'ENTREGADO', label: 'Entregado', detail: '¡Tu pedido fue entregado!' },
 ];
 
-const STATUS_ORDER: OrderStatus[] = ['PENDIENTE', 'CONFIRMADO', 'EN_PREP', 'EN_CAMINO', 'ENTREGADO', 'CANCELADO'];
+const STATUS_ORDER: OrderStatus[] = ['PENDIENTE', 'CONFIRMADO', 'EN_PREP', 'ENTREGADO', 'CANCELADO'];
 const CANCELLABLE: OrderStatus[] = ['PENDIENTE', 'CONFIRMADO'];
 
 const stepIndex = (status: OrderStatus) =>
@@ -54,10 +51,23 @@ interface SidebarProps {
   order: Order;
   onCancel: (id: number) => void;
   isCancelling: boolean;
+  onPay: (id: number) => void;
+  isPaying: boolean;
   onClose?: () => void;
 }
 
-const OrderDetailSidebar: React.FC<SidebarProps> = ({ order, onCancel, isCancelling, onClose }) => {
+const PAGO_LABEL: Record<string, string> = {
+  aprobado: 'Pago aprobado',
+  pendiente: 'Pago pendiente',
+  rechazado: 'Pago rechazado',
+};
+const PAGO_STYLE: Record<string, string> = {
+  aprobado: 'text-green-700 bg-green-50 border-green-200',
+  pendiente: 'text-amber-700 bg-amber-50 border-amber-200',
+  rechazado: 'text-[#ba1a1a] bg-red-50 border-red-200',
+};
+
+const OrderDetailSidebar: React.FC<SidebarProps> = ({ order, onCancel, isCancelling, onPay, isPaying, onClose }) => {
   const status      = order.estado_codigo as OrderStatus;
   const currentStep = stepIndex(status);
   const total       = calcTotal(order);
@@ -169,11 +179,53 @@ const OrderDetailSidebar: React.FC<SidebarProps> = ({ order, onCancel, isCancell
         )}
       </div>
 
-      {order.forma_pago_codigo && (
-        <div className="mt-4 flex items-center gap-2 text-sm text-[#5c403a]">
-          <span className="text-[12px] font-bold uppercase tracking-[0.05em]">Pago:</span>
-          <span className="font-medium">{order.forma_pago_codigo}</span>
+      {/* Pago */}
+      <div className="mt-4 p-4 bg-white rounded-lg border border-[#e5beb5] text-sm text-[#5c403a] shadow-sm">
+        <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#907068] mb-2 flex items-center gap-1.5">
+          <CreditCard className="w-3.5 h-3.5" /> Pago
+        </h3>
+        <div className="flex items-center justify-between">
+          <span>Medio</span>
+          <span className="font-semibold text-[#281814]">{order.forma_pago_codigo}</span>
         </div>
+
+        {order.pago && (
+          <>
+            <div className={`mt-2 px-2.5 py-1.5 rounded-md border text-xs font-bold inline-flex ${PAGO_STYLE[order.pago.estado] ?? 'text-[#5c403a] bg-[#fff0ed] border-[#e5beb5]'}`}>
+              {PAGO_LABEL[order.pago.estado] ?? order.pago.estado}
+            </div>
+            {order.pago.mp_payment_id && (
+              <div className="mt-2 flex items-center justify-between text-xs">
+                <span>N° de pago MP</span>
+                <span className="font-mono font-semibold text-[#281814]">#{order.pago.mp_payment_id}</span>
+              </div>
+            )}
+            {order.pago.payment_method_id && (
+              <div className="mt-1 flex items-center justify-between text-xs">
+                <span>Método</span>
+                <span className="font-semibold text-[#281814] uppercase">{order.pago.payment_method_id}</span>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Botón pagar online: solo si el pedido está PENDIENTE y no hay pago aprobado */}
+      {status === 'PENDIENTE' && order.pago?.estado !== 'aprobado' && (
+        <button
+          onClick={() => onPay(order.id)}
+          disabled={isPaying}
+          className="w-full mt-4 flex items-center justify-center gap-2 py-3 rounded-lg bg-[#009ee3] text-white font-bold text-sm hover:bg-[#0084c2] active:scale-95 transition-all disabled:opacity-50"
+        >
+          {isPaying ? (
+            <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+          ) : (
+            <>
+              <CreditCard className="w-4 h-4" />
+              Pagar con MercadoPago
+            </>
+          )}
+        </button>
       )}
 
       {order.notas && (
@@ -209,33 +261,18 @@ export const OrdersPage: React.FC = () => {
     refetchInterval: 60_000, // se conserva por si falla el websocket.
   });
 
-  // ─── WebSocket — actualizaciones en tiempo real ───────────────────────────
-  // El cliente es role:user — entra a su room de rol pero no recibe
-  // eventos generales. Para recibir actualizaciones de un pedido concreto
-  // debe llamar a subscribeToOrder(id), que une el socket a "order:{id}".
-  //
-  // WS_CONNECTED se emite al (re)conectar: aprovechamos ese evento para
-  // re-suscribirse a TODOS los pedidos activos, por si se perdieron
-  // eventos durante la desconexión.
-  //
-  // IMPORTANTE: subscribeToOrder/unsubscribeFromOrder se exponen via refs para
-  // evitar el error de Temporal Dead Zone (TDZ) que ocurre cuando el useCallback
-  // las referencia en sus deps siendo el resultado de la misma llamada a useWebSocket.
   const TERMINAL: OrderStatus[] = ['ENTREGADO', 'CANCELADO'];
 
-  // Refs para acceder a las funciones del hook sin circular initialization.
   const subscribeRef   = useRef<((id: number) => void) | null>(null);
   const unsubscribeRef = useRef<((id: number) => void) | null>(null);
 
   const handleMessage = useCallback(
     (msg: import('../../../hooks/useWebSocket').WsMessage) => {
       if (msg.event === 'WS_CONNECTED') {
-        // Al reconectar, re-suscribirse a todos los pedidos activos.
         const activos = (orders || []).filter(
           (o) => !TERMINAL.includes((o as Order).estado_codigo as OrderStatus),
         );
         activos.forEach((o) => subscribeRef.current?.((o as Order).id));
-        // Invalidar para tener datos frescos tras la reconexión.
         queryClient.invalidateQueries({ queryKey: ['orders'] });
         return;
       }
@@ -244,7 +281,6 @@ export const OrdersPage: React.FC = () => {
         'PEDIDO_NUEVO',
         'PEDIDO_CONFIRMADO',
         'PEDIDO_EN_PREPARACION',
-        'PEDIDO_EN_CAMINO',
         'PEDIDO_ENTREGADO',
         'PEDIDO_CANCELADO',
       ];
@@ -261,39 +297,34 @@ export const OrdersPage: React.FC = () => {
         }
       }
     },
-    // TERMINAL es estable (declarado en render pero siempre igual), orders cambia
-    // con los datos. subscribeRef/unsubscribeRef son refs estables → no van en deps.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [orders, queryClient],
   );
 
   const { subscribeToOrder, unsubscribeFromOrder } = useWebSocket({ onMessage: handleMessage });
-
-  // Actualizar las refs cada vez que el hook retorna funciones nuevas (son estables
-  // por useCallback interno, pero lo hacemos igualmente para ser correctos).
   subscribeRef.current   = subscribeToOrder;
   unsubscribeRef.current = unsubscribeFromOrder;
 
-  // Suscribir a pedidos activos cuando carga la lista inicial.
-  // Cuando WS_CONNECTED llega (al reconectar) también se re-suscriben,
-  // por eso aquí solo cubrimos el caso de carga inicial con WS ya abierto.
   useEffect(() => {
     if (!orders) return;
     const activos = (orders as Order[]).filter(
       (o) => !TERMINAL.includes(o.estado_codigo as OrderStatus),
     );
     activos.forEach((o) => subscribeToOrder(o.id));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orders]);
   
-  const { data: products } = useQuery({
-    queryKey: ['products'],
-    queryFn: productsService.getAll,
-  });
-
   const cancelMutation = useMutation({
     mutationFn: (id: number) => ordersService.cancel(id),
     onSuccess:  () => queryClient.invalidateQueries({ queryKey: ['orders'] }),
+  });
+
+  // Pagar o reintentar un pedido pendiente con MercadoPago.
+  const payMutation = useMutation({
+    mutationFn: (id: number) => paymentsService.crear(id),
+    onSuccess: (pago) => {
+      if (pago.init_point) {
+        window.location.href = pago.init_point;
+      }
+    },
   });
 
   const typedOrders = (orders || []) as Order[];
@@ -333,7 +364,6 @@ export const OrdersPage: React.FC = () => {
     PENDIENTE: <Clock className="w-4 h-4" />,
     CONFIRMADO: <CheckCircle2 className="w-4 h-4" />,
     EN_PREP: <ChefHat className="w-4 h-4" />,
-    EN_CAMINO: <Truck className="w-4 h-4" />,
     ENTREGADO: <PackageCheck className="w-4 h-4" />,
     CANCELADO: <XCircle className="w-4 h-4" />,
   };
@@ -424,6 +454,8 @@ export const OrdersPage: React.FC = () => {
                 order={selectedOrder}
                 onCancel={(id) => cancelMutation.mutate(id)}
                 isCancelling={cancelMutation.isPending}
+                onPay={(id) => payMutation.mutate(id)}
+                isPaying={payMutation.isPending}
                 onClose={() => setSelectedId(null)}
               />
             )}

@@ -2,9 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useCartStore } from '../store/useCartStore';
 import { ordersService } from '../../orders/services/orders';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, ShoppingBag, ArrowLeft, Minus, Plus, ArrowRight, Info, MapPin, Store } from 'lucide-react';
+import { Trash2, ShoppingBag, ArrowLeft, Minus, Plus, ArrowRight, Info, MapPin, Store, Banknote, Landmark, CreditCard } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { direccionesService } from '../../../shared/services/direcciones';
+import { paymentsService } from '../../payments/services/payments';
+
+type FormaPago = 'EFECTIVO' | 'TRANSFERENCIA' | 'MERCADOPAGO';
+
+const FORMAS_PAGO: { codigo: FormaPago; label: string; icon: React.ReactNode }[] = [
+  { codigo: 'EFECTIVO', label: 'Efectivo', icon: <Banknote className="w-4 h-4" /> },
+  { codigo: 'TRANSFERENCIA', label: 'Transferencia', icon: <Landmark className="w-4 h-4" /> },
+  { codigo: 'MERCADOPAGO', label: 'MercadoPago', icon: <CreditCard className="w-4 h-4" /> },
+];
 
 export const CartPage: React.FC = () => {
   const items        = useCartStore((s) => s.items);
@@ -16,6 +25,7 @@ export const CartPage: React.FC = () => {
   const [error,     setError]     = useState('');
   const [modalidadEnvio, setModalidadEnvio] = useState<'RETIRO' | 'ENVIO'>('RETIRO');
   const [direccionId, setDireccionId] = useState<number | null>(null);
+  const [formaPago, setFormaPago] = useState<FormaPago>('EFECTIVO');
   const navigate = useNavigate();
 
   const { data: direcciones } = useQuery({
@@ -43,7 +53,7 @@ export const CartPage: React.FC = () => {
     setError('');
 
     const payload = {
-      forma_pago_codigo: 'EFECTIVO',
+      forma_pago_codigo: formaPago,
       notas: null,
       direccion_id: modalidadEnvio === 'ENVIO' ? direccionId : null,
       detalles: items.map((i) => ({
@@ -53,11 +63,25 @@ export const CartPage: React.FC = () => {
     };
 
     try {
-      await ordersService.create(payload);
+      const pedido = await ordersService.create(payload);
       clear();
+
+      // Para MercadoPago, iniciamos el pago online y redirigimos al checkout.
+      if (formaPago === 'MERCADOPAGO') {
+        const pago = await paymentsService.crear(pedido.id);
+        if (pago.init_point) {
+          window.location.href = pago.init_point;
+          return;
+        }
+        setError('No se pudo iniciar el pago con MercadoPago. El pedido quedó pendiente.');
+        navigate('/orders');
+        return;
+      }
+
+      // Efectivo / Transferencia: el pedido queda pendiente de confirmación.
       navigate('/orders');
     } catch (e: any) {
-      setError(e.message || 'No se pudo crear el pedido');
+      setError(e?.response?.data?.detail || e.message || 'No se pudo crear el pedido');
     } finally {
       setIsLoading(false);
     }
@@ -239,6 +263,32 @@ export const CartPage: React.FC = () => {
                 </div>
               )}
 
+              {/* ── Medio de pago ── */}
+              <div className="pt-4 border-t border-[#e5beb5] mb-6">
+                <h2 className="font-bold text-[#281814] text-lg mb-3">Medio de pago</h2>
+                <div className="grid grid-cols-3 gap-2">
+                  {FORMAS_PAGO.map((fp) => (
+                    <button
+                      key={fp.codigo}
+                      onClick={() => { setFormaPago(fp.codigo); setError(''); }}
+                      className={`py-2.5 px-2 rounded-lg font-semibold text-xs flex flex-col items-center justify-center gap-1.5 border transition-all ${
+                        formaPago === fp.codigo
+                          ? 'bg-[#ffe9e4] border-[#b22300] text-[#b22300]'
+                          : 'bg-white border-[#e5beb5] text-[#5c403a] hover:bg-[#fff8f6]'
+                      }`}
+                    >
+                      {fp.icon}
+                      {fp.label}
+                    </button>
+                  ))}
+                </div>
+                {formaPago === 'MERCADOPAGO' && (
+                  <p className="mt-2 text-[11px] text-[#5c403a]">
+                    Vas a ser redirigido a MercadoPago para completar el pago de forma segura.
+                  </p>
+                )}
+              </div>
+
               <h2 className="font-bold text-[#281814] text-lg mb-6 pt-4 border-t border-[#e5beb5]">Resumen del Pedido</h2>
 
               <div className="space-y-4 mb-6">
@@ -287,7 +337,7 @@ export const CartPage: React.FC = () => {
                   <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
                 ) : (
                   <>
-                    Confirmar Pedido
+                    {formaPago === 'MERCADOPAGO' ? 'Pagar con MercadoPago' : 'Confirmar Pedido'}
                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </>
                 )}

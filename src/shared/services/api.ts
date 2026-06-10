@@ -14,25 +14,32 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
-
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    const status = error.response?.status;
+    const httpStatus = error.response?.status;
+    const url: string = error.config?.url || '';
+    // Endpoints de sesión: el authStore maneja el 401 (set user=null) y la
+    // redirección la hace React Router vía ProtectedRoute. NO redirigir acá
+    // para estos, porque hacerlo con window.location.href provoca una recarga
+    // que vuelve a pedir /auth/me → 401 → recarga… (loop infinito en /login).
+    const isSessionEndpoint =
+      url.includes('/auth/token') ||
+      url.includes('/auth/me') ||
+      url.includes('/auth/register') ||
+      url.includes('/auth/logout');
 
-    const url = error.config?.url || '';
-    if (status === 401 && !url.includes('/auth/')) {
-      // Token expirado o no autenticado -> forzar login
-      // Evitamos redireccionar en endpoints de auth (/auth/me, /auth/token) para evitar loops
+    const path = window.location.pathname;
+    const onAuthPage = path.startsWith('/login') || path.startsWith('/register');
+
+    if (httpStatus === 401 && !isSessionEndpoint && !onAuthPage) {
       window.location.href = '/login';
     }
 
-    if (status === 403) {
-      // Autenticado pero sin permisos-> página de acceso denegado
+    if (httpStatus === 403 && !path.startsWith('/forbidden')) {
       window.location.href = '/forbidden';
     }
 
-    // Propaga el error para que cada servicio / useQuery lo maneje
     return Promise.reject(error);
   },
 );
