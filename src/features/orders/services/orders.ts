@@ -18,4 +18,10 @@ export const ordersService = {
       method: 'PATCH',
       body: JSON.stringify({ motivo }),
     }),
+
+  createPago: (pedido_id: number) =>
+    apiFetch<{ init_point: string; preference_id: string }>('/pagos/crear', {
+      method: 'POST',
+      body: JSON.stringify({ pedido_id }),
+    }),
 };
