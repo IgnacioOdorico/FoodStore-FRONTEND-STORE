@@ -2,11 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useCartStore } from '../store/useCartStore';
 import { ordersService } from '../../orders/services/orders';
 import { useNavigate } from 'react-router-dom';
-<<<<<<< HEAD
-import { Trash2, ShoppingBag, ArrowLeft, Minus, Plus, ArrowRight, Info, MapPin, Store, Banknote, Landmark, CreditCard } from 'lucide-react';
-=======
-import { Trash2, ShoppingBag, ArrowLeft, Minus, Plus, ArrowRight, Info, MapPin, Store, Wallet, Banknote } from 'lucide-react';
->>>>>>> f9b69c2 (Aplicando cambios a carrito y configuracion de store)
+import { Trash2, ShoppingBag, ArrowLeft, Minus, Plus, ArrowRight, Info, MapPin, Store, Banknote, Landmark, CreditCard, Wallet } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { direccionesService } from '../../../shared/services/direcciones';
 import { paymentsService } from '../../payments/services/payments';
@@ -28,7 +24,6 @@ export const CartPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error,     setError]     = useState('');
   const [modalidadEnvio, setModalidadEnvio] = useState<'RETIRO' | 'ENVIO'>('RETIRO');
-  const [formaPago, setFormaPago] = useState<'EFECTIVO' | 'MERCADOPAGO'>('MERCADOPAGO');
   const [direccionId, setDireccionId] = useState<number | null>(null);
   const [formaPago, setFormaPago] = useState<FormaPago>('EFECTIVO');
   const navigate = useNavigate();
@@ -68,25 +63,7 @@ export const CartPage: React.FC = () => {
     };
 
     try {
-<<<<<<< HEAD
       const pedido = await ordersService.create(payload);
-=======
-      const order = await ordersService.create(payload);
-      
-      if (formaPago === 'MERCADOPAGO') {
-        const pago = await ordersService.createPago(order.id);
-        if (pago && pago.init_point) {
-          clear();
-          window.location.href = pago.init_point;
-          return;
-        } else {
-          setError(`Error MP: ${JSON.stringify(pago)}`);
-          setIsLoading(false);
-          return;
-        }
-      }
-      
->>>>>>> f9b69c2 (Aplicando cambios a carrito y configuracion de store)
       clear();
 
       // Para MercadoPago, iniciamos el pago online y redirigimos al checkout.
