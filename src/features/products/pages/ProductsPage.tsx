@@ -7,6 +7,8 @@ import { useCartStore } from '../../cart/store/useCartStore';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus, Eye } from 'lucide-react';
 import type { Producto } from '../types/producto';
+import { useDebounce } from '../../../shared/hooks/useDebounce';
+import { ProductCardSkeleton } from '../components/ProductCardSkeleton';
 
 export const ProductsPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -36,7 +38,6 @@ export const ProductsPage: React.FC = () => {
 
   const allCategories: string[] = allCategorias?.map((c) => c.nombre) ?? [];
 
-  // Filtro SERVER-SIDE: el backend devuelve SOLO productos de la categoría seleccionada
   const querySize = categoriaId ? 100 : PAGE_SIZE;
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['products', page, categoriaId],
@@ -46,7 +47,6 @@ export const ProductsPage: React.FC = () => {
   const allItems = data?.items ?? [];
   const total = data?.total ?? 0;
 
-  // Filtro CLIENT-SIDE: categoría (solo cuando categoriaId está activo) + búsqueda por texto
   const products = !categoriaId
     ? allItems
     : allItems.filter((p) =>
@@ -55,10 +55,11 @@ export const ProductsPage: React.FC = () => {
 
   const totalPages = categoriaId ? 1 : Math.ceil(total / PAGE_SIZE);
 
-  // Filtro CLIENT-SIDE: solo búsqueda por texto (la categoría ya la filtra el backend)
-  const filtered = !search
+  const debouncedSearch = useDebounce(search, 400);
+
+  const filtered = !debouncedSearch
     ? products
-    : products.filter((p) => p.nombre.toLowerCase().includes(search.toLowerCase()));
+    : products.filter((p) => p.nombre.toLowerCase().includes(debouncedSearch.toLowerCase()));
 
   const addItem = useCartStore((state) => state.addItem);
   const navigate = useNavigate();
@@ -98,7 +99,6 @@ export const ProductsPage: React.FC = () => {
     resetPagination();
   };
 
-  if (isLoading) return <LoadingState />;
   if (isError) return <ErrorState onRetry={() => refetch()} />;
 
   // Empty state que distingue si hay filtro activo o posta no hay productos
@@ -206,7 +206,13 @@ export const ProductsPage: React.FC = () => {
         )}
 
         {/* ── Grid de productos ── */}
-        {filtered.length === 0 ? (
+        {isLoading ? (
+          <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <ProductCardSkeleton key={i} />
+            ))}
+          </section>
+        ) : filtered.length === 0 ? (
           <EmptyState message={
             categoriaId
               ? `No hay productos de "${selectedCategory}" por el momento.`
