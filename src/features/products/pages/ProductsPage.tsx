@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { productsService } from '../services/products';
+import { apiClient } from '../../../shared/services/api';
 import { LoadingState, ErrorState, EmptyState } from '../../../shared/ui/States';
 import { useCartStore } from '../../cart/store/useCartStore';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -11,6 +12,11 @@ export const ProductsPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const search = searchParams.get('q') ?? '';
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [categoriaId, setCategoriaId] = useState<number | undefined>();
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
+
+  const resetPagination = () => setPage(1);
 
   const scrollToProducts = () => {
     setTimeout(() => {
@@ -18,43 +24,86 @@ export const ProductsPage: React.FC = () => {
     }, 100);
   };
 
-  const handleCategoryClick = (keyword: string) => {
-    // Busca si existe una categoría real que contenga la palabra clave (ej: "Postres" o "Ensaladas")
-    // Esto evita que falle si en la BD se llama "Postres" pero el botón dice "Postres & Dulces"
-    const realCategory = allCategories.find(c => c.toLowerCase().includes(keyword.toLowerCase()));
-    setSelectedCategory(realCategory || keyword);
-    scrollToProducts();
-  };
-
-  const { data: products, isLoading, isError, refetch } = useQuery({
-    queryKey: ['products'],
-    queryFn: productsService.getAll,
+  // Trae TODAS las categorías de una (sin paginación) para pills y hero filters
+  const { data: allCategorias } = useQuery({
+    queryKey: ['categorias'],
+    queryFn: () =>
+      apiClient
+        .get<{ id: number; nombre: string }[]>('/categorias/')
+        .then((r) => r.data),
+    staleTime: 5 * 60 * 1000,
   });
+
+  const allCategories: string[] = allCategorias?.map((c) => c.nombre) ?? [];
+
+  // Filtro SERVER-SIDE: el backend devuelve SOLO productos de la categoría seleccionada
+  const querySize = categoriaId ? 100 : PAGE_SIZE;
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ['products', page, categoriaId],
+    queryFn: () => productsService.getAll({ page, size: querySize }),
+  });
+
+  const allItems = data?.items ?? [];
+  const total = data?.total ?? 0;
+
+  // Filtro CLIENT-SIDE: categoría (solo cuando categoriaId está activo) + búsqueda por texto
+  const products = !categoriaId
+    ? allItems
+    : allItems.filter((p) =>
+        (p.categorias || []).some((c) => c.id === categoriaId),
+      );
+
+  const totalPages = categoriaId ? 1 : Math.ceil(total / PAGE_SIZE);
+
+  // Filtro CLIENT-SIDE: solo búsqueda por texto (la categoría ya la filtra el backend)
+  const filtered = !search
+    ? products
+    : products.filter((p) => p.nombre.toLowerCase().includes(search.toLowerCase()));
 
   const addItem = useCartStore((state) => state.addItem);
   const navigate = useNavigate();
 
+  // ── Handlers ──
+
+  const handleCategoryClick = (keyword: string) => {
+    const cat = allCategorias?.find((c) =>
+      c.nombre.toLowerCase().includes(keyword.toLowerCase()),
+    );
+    if (cat) {
+      setCategoriaId(cat.id);
+      setSelectedCategory(cat.nombre);
+    } else {
+      setCategoriaId(undefined);
+      setSelectedCategory(keyword);
+    }
+    resetPagination();
+    scrollToProducts();
+  };
+
+  const handlePillClick = (catName: string) => {
+    if (catName === selectedCategory) {
+      setSelectedCategory('');
+      setCategoriaId(undefined);
+    } else {
+      const cat = allCategorias?.find((c) => c.nombre === catName);
+      setCategoriaId(cat?.id);
+      setSelectedCategory(catName);
+    }
+    resetPagination();
+  };
+
+  const clearAllFilters = () => {
+    setSelectedCategory('');
+    setCategoriaId(undefined);
+    resetPagination();
+  };
+
   if (isLoading) return <LoadingState />;
   if (isError) return <ErrorState onRetry={() => refetch()} />;
-  if (!products || products.length === 0)
+
+  // Empty state que distingue si hay filtro activo o posta no hay productos
+  if (!data || (products.length === 0 && !categoriaId))
     return <EmptyState message="No hay productos disponibles" />;
-
-  const allCategories: string[] = Array.from(
-    new Set(
-      (products as Producto[]).flatMap((p) =>
-        (p.categorias || []).map((c) => c.nombre),
-      ),
-    ),
-  );
-
-  const filtered = (products as Producto[]).filter((p) => {
-    const matchSearch =
-      !search || p.nombre.toLowerCase().includes(search.toLowerCase());
-    const matchCategory =
-      !selectedCategory ||
-      (p.categorias || []).some((c) => c.nombre === selectedCategory);
-    return matchSearch && matchCategory;
-  });
 
   return (
     <div className="min-h-screen bg-[#fff8f6]">
@@ -81,7 +130,7 @@ export const ProductsPage: React.FC = () => {
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
-                  setSelectedCategory('');
+                  clearAllFilters();
                   scrollToProducts();
                 }}
                 className="bg-white text-[#b22300] font-bold px-6 py-3 rounded-lg w-fit text-sm hover:bg-[#fff0ed] active:scale-95 transition-all"
@@ -133,7 +182,7 @@ export const ProductsPage: React.FC = () => {
         {allCategories.length > 0 && (
           <div className="flex gap-2 overflow-x-auto pb-2 mb-8 scrollbar-hide">
             <button
-              onClick={() => setSelectedCategory('')}
+              onClick={clearAllFilters}
               className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-all ${
                 selectedCategory === ''
                   ? 'bg-[#b22300] text-white'
@@ -145,7 +194,7 @@ export const ProductsPage: React.FC = () => {
             {allCategories.map((cat) => (
               <button
                 key={cat}
-                onClick={() => setSelectedCategory(cat === selectedCategory ? '' : cat)}
+                onClick={() => handlePillClick(cat)}
                 className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-all ${
                   selectedCategory === cat
                     ? 'bg-[#b22300] text-white'
@@ -160,18 +209,57 @@ export const ProductsPage: React.FC = () => {
 
         {/* ── Grid de productos ── */}
         {filtered.length === 0 ? (
-          <EmptyState message="No se encontraron productos con ese criterio" />
+          <EmptyState message={
+            categoriaId
+              ? `No hay productos de "${selectedCategory}" por el momento.`
+              : 'No se encontraron productos con ese criterio'
+          } />
         ) : (
-          <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {filtered.map((p: Producto) => (
-              <ProductCard
-                key={p.id}
-                product={p}
-                onView={() => navigate(`/products/${p.id}`)}
-                onAdd={() => addItem(p, 1)}
-              />
-            ))}
-          </section>
+          <>
+            <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {filtered.map((p: Producto) => (
+                <ProductCard
+                  key={p.id}
+                  product={p}
+                  onView={() => navigate(`/products/${p.id}`)}
+                  onAdd={() => addItem(p, 1)}
+                />
+              ))}
+            </section>
+
+            {/* ── Paginación ── */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-2 mt-10">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="px-3 py-2 rounded-lg text-sm font-bold border border-[#e5beb5] text-[#5c403a] hover:bg-[#ffe9e4] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                >
+                  ← Anterior
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className={`w-10 h-10 rounded-lg text-sm font-bold transition-all ${
+                      p === page
+                        ? 'bg-[#b22300] text-white'
+                        : 'border border-[#e5beb5] text-[#5c403a] hover:bg-[#ffe9e4]'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="px-3 py-2 rounded-lg text-sm font-bold border border-[#e5beb5] text-[#5c403a] hover:bg-[#ffe9e4] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                >
+                  Siguiente →
+                </button>
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>
