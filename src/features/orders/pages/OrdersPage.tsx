@@ -304,13 +304,21 @@ export const OrdersPage: React.FC = () => {
   subscribeRef.current   = subscribeToOrder;
   unsubscribeRef.current = unsubscribeFromOrder;
 
+  const subscribedOrdersRef = useRef<Set<number>>(new Set());
+
   useEffect(() => {
     if (!orders) return;
     const activos = (orders as Order[]).filter(
       (o) => !TERMINAL.includes(o.estado_codigo as OrderStatus),
     );
-    activos.forEach((o) => subscribeToOrder(o.id));
-  }, [orders]);
+    
+    activos.forEach((o) => {
+      if (!subscribedOrdersRef.current.has(o.id)) {
+        subscribeToOrder(o.id);
+        subscribedOrdersRef.current.add(o.id);
+      }
+    });
+  }, [orders, subscribeToOrder]);
   
   const cancelMutation = useMutation({
     mutationFn: (id: number) => ordersService.cancel(id),
@@ -325,6 +333,9 @@ export const OrdersPage: React.FC = () => {
         window.location.href = pago.init_point;
       }
     },
+    onError: (err: any) => {
+      alert(err.response?.data?.detail || err.message || 'Error al conectar con MercadoPago');
+    }
   });
 
   const typedOrders = (orders || []) as Order[];

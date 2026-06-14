@@ -50,8 +50,8 @@ export const ProductsPage: React.FC = () => {
   const products = !categoriaId
     ? allItems
     : allItems.filter((p) =>
-        (p.categorias || []).some((c) => c.id === categoriaId),
-      );
+      (p.categorias || []).some((c) => c.id === categoriaId),
+    );
 
   const totalPages = categoriaId ? 1 : Math.ceil(total / PAGE_SIZE);
 
@@ -113,10 +113,10 @@ export const ProductsPage: React.FC = () => {
         <section className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-16">
           {/* Hero principal */}
           <div className="md:col-span-8 relative overflow-hidden rounded-xl bg-[#da3711] h-[280px] md:h-[360px] group cursor-pointer"
-               onClick={() => navigate('/products')}>
+            onClick={() => navigate('/products')}>
             <div className="absolute inset-0 bg-gradient-to-br from-[#b22300] to-[#da3711]" />
             <div className="absolute inset-0 opacity-20"
-                 style={{ backgroundImage: 'radial-gradient(circle at 70% 50%, #fff 0%, transparent 60%)' }} />
+              style={{ backgroundImage: 'radial-gradient(circle at 70% 50%, #fff 0%, transparent 60%)' }} />
             <div className="absolute inset-0 flex flex-col justify-end p-10">
               <span className="bg-white text-[#b22300] text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full w-fit mb-3">
                 Selección del Editor
@@ -127,7 +127,7 @@ export const ProductsPage: React.FC = () => {
               <p className="text-white/80 text-sm mb-5 max-w-sm">
                 Ingredientes frescos, recetas artesanales, en tu puerta.
               </p>
-              <button 
+              <button
                 onClick={(e) => {
                   e.stopPropagation();
                   clearAllFilters();
@@ -142,7 +142,7 @@ export const ProductsPage: React.FC = () => {
 
           {/* Mini cards */}
           <div className="md:col-span-4 grid grid-rows-2 gap-6">
-            <div 
+            <div
               className="relative overflow-hidden rounded-xl bg-[#dae2fd] group cursor-pointer h-[130px]"
               onClick={(e) => {
                 e.stopPropagation();
@@ -154,7 +154,7 @@ export const ProductsPage: React.FC = () => {
                 <p className="text-[#131b2e]/70 text-sm">Repostería artesanal</p>
               </div>
             </div>
-            <div 
+            <div
               className="relative overflow-hidden rounded-xl bg-[#cce5ff] group cursor-pointer h-[130px]"
               onClick={(e) => {
                 e.stopPropagation();
@@ -183,11 +183,10 @@ export const ProductsPage: React.FC = () => {
           <div className="flex gap-2 overflow-x-auto pb-2 mb-8 scrollbar-hide">
             <button
               onClick={clearAllFilters}
-              className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-all ${
-                selectedCategory === ''
-                  ? 'bg-[#b22300] text-white'
-                  : 'bg-[#ffe9e4] text-[#5c403a] hover:bg-[#ffe2db]'
-              }`}
+              className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-all ${selectedCategory === ''
+                ? 'bg-[#b22300] text-white'
+                : 'bg-[#ffe9e4] text-[#5c403a] hover:bg-[#ffe2db]'
+                }`}
             >
               Todos
             </button>
@@ -195,11 +194,10 @@ export const ProductsPage: React.FC = () => {
               <button
                 key={cat}
                 onClick={() => handlePillClick(cat)}
-                className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-all ${
-                  selectedCategory === cat
-                    ? 'bg-[#b22300] text-white'
-                    : 'bg-[#ffe9e4] text-[#5c403a] hover:bg-[#ffe2db]'
-                }`}
+                className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-all ${selectedCategory === cat
+                  ? 'bg-[#b22300] text-white'
+                  : 'bg-[#ffe9e4] text-[#5c403a] hover:bg-[#ffe2db]'
+                  }`}
               >
                 {cat}
               </button>
@@ -241,11 +239,10 @@ export const ProductsPage: React.FC = () => {
                   <button
                     key={p}
                     onClick={() => setPage(p)}
-                    className={`w-10 h-10 rounded-lg text-sm font-bold transition-all ${
-                      p === page
-                        ? 'bg-[#b22300] text-white'
-                        : 'border border-[#e5beb5] text-[#5c403a] hover:bg-[#ffe9e4]'
-                    }`}
+                    className={`w-10 h-10 rounded-lg text-sm font-bold transition-all ${p === page
+                      ? 'bg-[#b22300] text-white'
+                      : 'border border-[#e5beb5] text-[#5c403a] hover:bg-[#ffe9e4]'
+                      }`}
                   >
                     {p}
                   </button>
@@ -280,7 +277,9 @@ const ProductCard: React.FC<{
       <div className="relative aspect-square overflow-hidden cursor-pointer" onClick={onView}>
         {p.imagenes_url?.[0] ? (
           <img
-            src={p.imagenes_url[0]}
+            src={p.imagenes_url[0].includes('/upload/')
+              ? p.imagenes_url[0].replace('/upload/', '/upload/f_auto,q_auto,c_fill,w_400,h_400/')
+              : p.imagenes_url[0]}
             alt={p.nombre}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
           />
@@ -323,6 +322,22 @@ const ProductCard: React.FC<{
         >
           {p.nombre}
         </h3>
+
+        {/* Badges de dieta(vegano/celiaco) */}
+        {(p.es_apto_celiaco || p.es_apto_vegano) && (
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {p.es_apto_celiaco && (
+              <span className="bg-[#e6f4ea] text-[#137333] px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border border-[#137333]/20" title="Apto Celíacos">
+                Sin TACC
+              </span>
+            )}
+            {p.es_apto_vegano && (
+              <span className="bg-[#e6f4ea] text-[#137333] px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border border-[#137333]/20" title="Apto Veganos">
+                Vegano
+              </span>
+            )}
+          </div>
+        )}
 
         <div className="mt-auto flex items-center justify-between pt-3">
           <span className="text-[#b22300] font-black text-lg">
