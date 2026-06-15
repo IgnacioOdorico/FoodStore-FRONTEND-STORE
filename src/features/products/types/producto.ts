@@ -19,8 +19,6 @@ export interface Producto {
   imagenes_url: string[];
   stock_cantidad: number;
   disponible: boolean;
-  es_apto_celiaco?: boolean;
-  es_apto_vegano?: boolean;
   categorias?: Categoria[];
   ingredientes?: Ingrediente[];
 }

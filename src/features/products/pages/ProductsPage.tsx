@@ -329,21 +329,7 @@ const ProductCard: React.FC<{
           {p.nombre}
         </h3>
 
-        {/* Badges de dieta(vegano/celiaco) */}
-        {(p.es_apto_celiaco || p.es_apto_vegano) && (
-          <div className="flex flex-wrap gap-1.5 mt-2">
-            {p.es_apto_celiaco && (
-              <span className="bg-[#e6f4ea] text-[#137333] px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border border-[#137333]/20" title="Apto Celíacos">
-                Sin TACC
-              </span>
-            )}
-            {p.es_apto_vegano && (
-              <span className="bg-[#e6f4ea] text-[#137333] px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border border-[#137333]/20" title="Apto Veganos">
-                Vegano
-              </span>
-            )}
-          </div>
-        )}
+
 
         <div className="mt-auto flex items-center justify-between pt-3">
           <span className="text-[#b22300] font-black text-lg">
