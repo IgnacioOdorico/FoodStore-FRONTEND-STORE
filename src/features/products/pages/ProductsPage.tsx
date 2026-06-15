@@ -101,9 +101,6 @@ export const ProductsPage: React.FC = () => {
 
   if (isError) return <ErrorState onRetry={() => refetch()} />;
 
-  // Empty state que distingue si hay filtro activo o posta no hay productos
-  if (!data || (products.length === 0 && !categoriaId))
-    return <EmptyState message="No hay productos disponibles" />;
 
   return (
     <div className="min-h-screen bg-[#fff8f6]">
@@ -216,7 +213,9 @@ export const ProductsPage: React.FC = () => {
           <EmptyState message={
             categoriaId
               ? `No hay productos de "${selectedCategory}" por el momento.`
-              : 'No se encontraron productos con ese criterio'
+              : debouncedSearch
+              ? 'No se encontraron productos con ese criterio.'
+              : 'No hay productos disponibles.'
           } />
         ) : (
           <>

@@ -58,9 +58,14 @@ export function useWebSocket({
           ws.close(1000);
           return;
         }
+        const isReconnection = retryCount > 0;
         retryCount = 0;
         wsConnect();
         onMessageRef.current?.({ event: 'WS_CONNECTED', data: null });
+
+        if (isReconnection) {
+          onMessageRef.current?.({ event: 'WS_RECONNECTED', data: null });
+        }
       };
 
       ws.onmessage = (event) => {

@@ -3,11 +3,9 @@ import { Link, NavLink, useNavigate, useLocation, useSearchParams } from 'react-
 import { ShoppingCart, ClipboardList, User, LogOut, UtensilsCrossed, Settings, Search, Wifi, WifiOff } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useCartStore } from '../../features/cart/store/useCartStore';
-import { useWsStore } from '../../store/wsStore';
 
 export const Navbar: React.FC = () => {
   const { user, logout, isCheckingAuth} = useAuthStore();
-  const isWsConnected = useWsStore((s) => s.isConnected);
   const navigate  = useNavigate();
   const location  = useLocation();
   const [searchParams] = useSearchParams();
@@ -132,12 +130,6 @@ export const Navbar: React.FC = () => {
                   </span>
                 </div>
                 <span className="text-xs font-semibold text-[#281814]">{user.nombre}</span>
-                <span
-                  title={isWsConnected ? 'Tiempo real activo' : 'Sin conexión en tiempo real'}
-                  className={`w-2 h-2 rounded-full flex-shrink-0 transition-colors ${
-                    isWsConnected ? 'bg-green-500' : 'bg-red-400 animate-pulse'
-                  }`}
-                />
               </Link>
 
               <Link
