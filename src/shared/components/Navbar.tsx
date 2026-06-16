@@ -109,7 +109,7 @@ export const Navbar: React.FC = () => {
           </Link>
 
           {/* Conexión WebSocket */}
-          <div className="hidden md:flex items-center gap-1.5 px-1">
+          <div className="hidden">
             <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-red-500'}`} />
             <span className="text-[10px] font-bold text-[#5c403a]">
               {isConnected ? 'En vivo' : 'Sin conexión'}
