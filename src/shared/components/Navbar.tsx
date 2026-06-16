@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, NavLink, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { ShoppingCart, ClipboardList, User, LogOut, UtensilsCrossed, Settings, Search } from 'lucide-react';
+import { ShoppingCart, ClipboardList, User, LogOut, UtensilsCrossed, Settings, Search, Wifi, WifiOff } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useCartStore } from '../../features/cart/store/useCartStore';
+import { useWsStore } from '../../store/wsStore';
 
 export const Navbar: React.FC = () => {
   const { user, logout, isCheckingAuth} = useAuthStore();
@@ -13,6 +14,7 @@ export const Navbar: React.FC = () => {
   const itemCount = useCartStore(
     (state) => state.items.reduce((acc, i) => acc + i.cantidad, 0),
   );
+  const isConnected = useWsStore((s) => s.isConnected);
 
   // Sincroniza el input con el param ?q= de la URL
   const [searchValue, setSearchValue] = useState(searchParams.get('q') ?? '');
@@ -105,6 +107,14 @@ export const Navbar: React.FC = () => {
               </span>
             )}
           </Link>
+
+          {/* Conexión WebSocket */}
+          <div className="hidden">
+            <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-red-500'}`} />
+            <span className="text-[10px] font-bold text-[#5c403a]">
+              {isConnected ? 'En vivo' : 'Sin conexión'}
+            </span>
+          </div>
 
           {/* Pedidos (mobile) */}
           <NavLink

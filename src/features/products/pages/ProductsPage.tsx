@@ -7,6 +7,9 @@ import { useCartStore } from '../../cart/store/useCartStore';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus, Eye } from 'lucide-react';
 import type { Producto } from '../types/producto';
+import { useDebounce } from '../../../shared/hooks/useDebounce';
+import { ProductCardSkeleton } from '../components/ProductCardSkeleton';
+import { transformCloudinaryUrl } from '../../../shared/utils/cloudinary';
 
 export const ProductsPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -29,14 +32,13 @@ export const ProductsPage: React.FC = () => {
     queryKey: ['categorias'],
     queryFn: () =>
       apiClient
-        .get<{ id: number; nombre: string }[]>('/categorias/')
-        .then((r) => r.data),
+        .get<{ items: { id: number; nombre: string }[]; total: number }>('/categorias/')
+        .then((r) => r.data.items),
     staleTime: 5 * 60 * 1000,
   });
 
   const allCategories: string[] = allCategorias?.map((c) => c.nombre) ?? [];
 
-  // Filtro SERVER-SIDE: el backend devuelve SOLO productos de la categoría seleccionada
   const querySize = categoriaId ? 100 : PAGE_SIZE;
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['products', page, categoriaId],
@@ -46,19 +48,19 @@ export const ProductsPage: React.FC = () => {
   const allItems = data?.items ?? [];
   const total = data?.total ?? 0;
 
-  // Filtro CLIENT-SIDE: categoría (solo cuando categoriaId está activo) + búsqueda por texto
   const products = !categoriaId
     ? allItems
     : allItems.filter((p) =>
-        (p.categorias || []).some((c) => c.id === categoriaId),
-      );
+      (p.categorias || []).some((c) => c.id === categoriaId),
+    );
 
   const totalPages = categoriaId ? 1 : Math.ceil(total / PAGE_SIZE);
 
-  // Filtro CLIENT-SIDE: solo búsqueda por texto (la categoría ya la filtra el backend)
-  const filtered = !search
+  const debouncedSearch = useDebounce(search, 400);
+
+  const filtered = !debouncedSearch
     ? products
-    : products.filter((p) => p.nombre.toLowerCase().includes(search.toLowerCase()));
+    : products.filter((p) => p.nombre.toLowerCase().includes(debouncedSearch.toLowerCase()));
 
   const addItem = useCartStore((state) => state.addItem);
   const navigate = useNavigate();
@@ -98,12 +100,8 @@ export const ProductsPage: React.FC = () => {
     resetPagination();
   };
 
-  if (isLoading) return <LoadingState />;
   if (isError) return <ErrorState onRetry={() => refetch()} />;
 
-  // Empty state que distingue si hay filtro activo o posta no hay productos
-  if (!data || (products.length === 0 && !categoriaId))
-    return <EmptyState message="No hay productos disponibles" />;
 
   return (
     <div className="min-h-screen bg-[#fff8f6]">
@@ -113,10 +111,10 @@ export const ProductsPage: React.FC = () => {
         <section className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-16">
           {/* Hero principal */}
           <div className="md:col-span-8 relative overflow-hidden rounded-xl bg-[#da3711] h-[280px] md:h-[360px] group cursor-pointer"
-               onClick={() => navigate('/products')}>
+            onClick={() => navigate('/products')}>
             <div className="absolute inset-0 bg-gradient-to-br from-[#b22300] to-[#da3711]" />
             <div className="absolute inset-0 opacity-20"
-                 style={{ backgroundImage: 'radial-gradient(circle at 70% 50%, #fff 0%, transparent 60%)' }} />
+              style={{ backgroundImage: 'radial-gradient(circle at 70% 50%, #fff 0%, transparent 60%)' }} />
             <div className="absolute inset-0 flex flex-col justify-end p-10">
               <span className="bg-white text-[#b22300] text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full w-fit mb-3">
                 Selección del Editor
@@ -127,7 +125,7 @@ export const ProductsPage: React.FC = () => {
               <p className="text-white/80 text-sm mb-5 max-w-sm">
                 Ingredientes frescos, recetas artesanales, en tu puerta.
               </p>
-              <button 
+              <button
                 onClick={(e) => {
                   e.stopPropagation();
                   clearAllFilters();
@@ -142,7 +140,7 @@ export const ProductsPage: React.FC = () => {
 
           {/* Mini cards */}
           <div className="md:col-span-4 grid grid-rows-2 gap-6">
-            <div 
+            <div
               className="relative overflow-hidden rounded-xl bg-[#dae2fd] group cursor-pointer h-[130px]"
               onClick={(e) => {
                 e.stopPropagation();
@@ -154,7 +152,7 @@ export const ProductsPage: React.FC = () => {
                 <p className="text-[#131b2e]/70 text-sm">Repostería artesanal</p>
               </div>
             </div>
-            <div 
+            <div
               className="relative overflow-hidden rounded-xl bg-[#cce5ff] group cursor-pointer h-[130px]"
               onClick={(e) => {
                 e.stopPropagation();
@@ -183,11 +181,10 @@ export const ProductsPage: React.FC = () => {
           <div className="flex gap-2 overflow-x-auto pb-2 mb-8 scrollbar-hide">
             <button
               onClick={clearAllFilters}
-              className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-all ${
-                selectedCategory === ''
-                  ? 'bg-[#b22300] text-white'
-                  : 'bg-[#ffe9e4] text-[#5c403a] hover:bg-[#ffe2db]'
-              }`}
+              className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-all ${selectedCategory === ''
+                ? 'bg-[#b22300] text-white'
+                : 'bg-[#ffe9e4] text-[#5c403a] hover:bg-[#ffe2db]'
+                }`}
             >
               Todos
             </button>
@@ -195,11 +192,10 @@ export const ProductsPage: React.FC = () => {
               <button
                 key={cat}
                 onClick={() => handlePillClick(cat)}
-                className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-all ${
-                  selectedCategory === cat
-                    ? 'bg-[#b22300] text-white'
-                    : 'bg-[#ffe9e4] text-[#5c403a] hover:bg-[#ffe2db]'
-                }`}
+                className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-all ${selectedCategory === cat
+                  ? 'bg-[#b22300] text-white'
+                  : 'bg-[#ffe9e4] text-[#5c403a] hover:bg-[#ffe2db]'
+                  }`}
               >
                 {cat}
               </button>
@@ -208,11 +204,19 @@ export const ProductsPage: React.FC = () => {
         )}
 
         {/* ── Grid de productos ── */}
-        {filtered.length === 0 ? (
+        {isLoading ? (
+          <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <ProductCardSkeleton key={i} />
+            ))}
+          </section>
+        ) : filtered.length === 0 ? (
           <EmptyState message={
             categoriaId
               ? `No hay productos de "${selectedCategory}" por el momento.`
-              : 'No se encontraron productos con ese criterio'
+              : debouncedSearch
+              ? 'No se encontraron productos con ese criterio.'
+              : 'No hay productos disponibles.'
           } />
         ) : (
           <>
@@ -241,11 +245,10 @@ export const ProductsPage: React.FC = () => {
                   <button
                     key={p}
                     onClick={() => setPage(p)}
-                    className={`w-10 h-10 rounded-lg text-sm font-bold transition-all ${
-                      p === page
-                        ? 'bg-[#b22300] text-white'
-                        : 'border border-[#e5beb5] text-[#5c403a] hover:bg-[#ffe9e4]'
-                    }`}
+                    className={`w-10 h-10 rounded-lg text-sm font-bold transition-all ${p === page
+                      ? 'bg-[#b22300] text-white'
+                      : 'border border-[#e5beb5] text-[#5c403a] hover:bg-[#ffe9e4]'
+                      }`}
                   >
                     {p}
                   </button>
@@ -280,7 +283,7 @@ const ProductCard: React.FC<{
       <div className="relative aspect-square overflow-hidden cursor-pointer" onClick={onView}>
         {p.imagenes_url?.[0] ? (
           <img
-            src={p.imagenes_url[0]}
+            src={transformCloudinaryUrl(p.imagenes_url[0], 400, 400) || p.imagenes_url[0]}
             alt={p.nombre}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
           />
@@ -323,6 +326,8 @@ const ProductCard: React.FC<{
         >
           {p.nombre}
         </h3>
+
+
 
         <div className="mt-auto flex items-center justify-between pt-3">
           <span className="text-[#b22300] font-black text-lg">

@@ -36,8 +36,13 @@ const ModalDireccion: React.FC<ModalDireccionProps> = ({ estaAbierto, alCerrar, 
       queryClient.invalidateQueries({ queryKey: ['direcciones'] });
       alCerrar();
     },
-    onError: (err: any) => {
-      setError(err?.response?.data?.detail ?? 'Error al guardar la dirección');
+    onError: (err: unknown) => {
+      if (err && typeof err === 'object' && 'response' in err) {
+        const axiosErr = err as { response: { data: { detail?: string } } };
+        setError(axiosErr.response?.data?.detail ?? 'Error al guardar la dirección');
+      } else {
+        setError('Error al guardar la dirección');
+      }
     },
   });
 

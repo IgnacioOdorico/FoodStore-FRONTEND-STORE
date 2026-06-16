@@ -35,8 +35,8 @@ export const RegisterPage = () => {
         celular: celular.trim() || undefined
       });
       navigate('/products');
-    } catch (err: any) {
-      setError(err.message || 'Error al registrar cuenta');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error al registrar cuenta');
     } finally {
       setIsLoading(false);
     }

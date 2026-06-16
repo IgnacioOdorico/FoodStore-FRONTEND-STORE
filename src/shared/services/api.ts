@@ -8,6 +8,19 @@ export const apiClient = axios.create({
   withCredentials: true,
 });
 
+let isRefreshing = false;
+let failedQueue: Array<{ resolve: () => void; reject: (reason?: unknown) => void }> = [];
+
+function processQueue(error: unknown): void {
+  failedQueue.forEach(({ resolve, reject }) => {
+    if (error) {
+      reject(error);
+    } else {
+      resolve();
+    }
+  });
+  failedQueue = [];
+}
 
 apiClient.interceptors.request.use(
   (config) => config,
@@ -16,27 +29,44 @@ apiClient.interceptors.request.use(
 
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
-    const httpStatus = error.response?.status;
+  async (error) => {
+    const status = error.response?.status;
     const url: string = error.config?.url || '';
-    // Endpoints de sesión: el authStore maneja el 401 (set user=null) y la
-    // redirección la hace React Router vía ProtectedRoute. NO redirigir acá
-    // para estos, porque hacerlo con window.location.href provoca una recarga
-    // que vuelve a pedir /auth/me → 401 → recarga… (loop infinito en /login).
+
     const isSessionEndpoint =
       url.includes('/auth/token') ||
       url.includes('/auth/me') ||
-      url.includes('/auth/register') ||
-      url.includes('/auth/logout');
+      url.includes('/auth/refresh') ||
+      url.includes('/auth/logout') ||
+      url.includes('/auth/register');
 
     const path = window.location.pathname;
     const onAuthPage = path.startsWith('/login') || path.startsWith('/register');
 
-    if (httpStatus === 401 && !isSessionEndpoint && !onAuthPage) {
-      window.location.href = '/login';
+    if (status === 401 && !isSessionEndpoint && !onAuthPage) {
+      if (!isRefreshing) {
+        isRefreshing = true;
+        try {
+          await apiClient.post('/auth/refresh', {}, { withCredentials: true });
+          processQueue(null);
+          return apiClient(error.config);
+        } catch (refreshError) {
+          processQueue(refreshError);
+          window.location.href = '/login';
+          return Promise.reject(refreshError);
+        } finally {
+          isRefreshing = false;
+        }
+      } else {
+        return new Promise<void>((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then(() => {
+          return apiClient(error.config);
+        });
+      }
     }
 
-    if (httpStatus === 403 && !path.startsWith('/forbidden')) {
+    if (status === 403 && !path.startsWith('/forbidden')) {
       window.location.href = '/forbidden';
     }
 
@@ -44,10 +74,14 @@ apiClient.interceptors.response.use(
   },
 );
 
-// Helper de delay solo para demo en el video 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-const DEMO_DELAY_MS = 1200; // en produccion cambiarlo a 0
-
+export async function attemptRefresh(): Promise<boolean> {
+  try {
+    await apiClient.post('/auth/refresh', {}, { withCredentials: true });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export async function apiFetch<T = unknown>(
   endpoint: string,
@@ -57,11 +91,9 @@ export async function apiFetch<T = unknown>(
     headers?: Record<string, string>;
   } = {},
 ): Promise<T> {
-  await delay(DEMO_DELAY_MS);
-
   const response = await apiClient.request<T>({
     url: endpoint,
-    method: (options.method as any) ?? 'GET',
+    method: (options.method ?? 'GET') as 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
     data: options.body ? JSON.parse(options.body) : undefined,
     headers: options.headers,
   });

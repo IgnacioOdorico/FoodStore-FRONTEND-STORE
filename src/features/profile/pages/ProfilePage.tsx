@@ -41,8 +41,13 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ onClose }) =>
     try {
       await authService.changePassword(actual, nuevo);
       setStatus('ok');
-    } catch (e: any) {
-      setError(e?.response?.data?.detail ?? 'No se pudo cambiar la contraseña.');
+    } catch (e: unknown) {
+      if (e && typeof e === 'object' && 'response' in e) {
+        const err = e as { response: { data: { detail?: string } } };
+        setError(err.response?.data?.detail ?? 'No se pudo cambiar la contraseña.');
+      } else {
+        setError('No se pudo cambiar la contraseña.');
+      }
       setStatus('error');
     }
   };
@@ -226,8 +231,13 @@ export const ProfilePage: React.FC = () => {
       });
       setSaveState('saved');
       setTimeout(() => setSaveState('idle'), 2500);
-    } catch (e: any) {
-      setSaveError(e?.response?.data?.detail ?? 'No se pudieron guardar los cambios');
+    } catch (e: unknown) {
+      if (e && typeof e === 'object' && 'response' in e) {
+        const err = e as { response: { data: { detail?: string } } };
+        setSaveError(err.response?.data?.detail ?? 'No se pudieron guardar los cambios');
+      } else {
+        setSaveError('No se pudieron guardar los cambios');
+      }
       setSaveState('error');
       setTimeout(() => setSaveState('idle'), 3000);
     }

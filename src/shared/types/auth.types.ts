@@ -5,6 +5,14 @@
 // CLIENT  -> Catalogo, carrito, pedidos propios
 export type IRole = 'ADMIN' | 'STOCK' | 'PEDIDOS' | 'CLIENT';
 
+export interface RegisterData {
+  nombre: string;
+  apellido: string;
+  email: string;
+  password: string;
+  celular?: string;
+}
+
 export interface IUser {
   id: number;
   nombre: string;
