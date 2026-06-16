@@ -73,6 +73,10 @@ export const CartPage: React.FC = () => {
 
       if (formaPago === 'MERCADOPAGO') {
         const pago = await crearPago(pedido.id);
+        if (pago.init_point) {
+          window.location.href = pago.init_point;
+          return;
+        }
         if (pago.preference_id) {
           setMpPreferenceId(pago.preference_id);
           setShowMPBrick(true);
