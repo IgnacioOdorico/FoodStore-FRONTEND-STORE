@@ -5,6 +5,8 @@ import { productsService } from '../services/products';
 import { LoadingState, ErrorState } from '../../../shared/ui/States';
 import { ArrowLeft, ShoppingBag, Minus, Plus, AlertTriangle, Tags, Info } from 'lucide-react';
 import { useCartStore } from '../../cart/store/useCartStore';
+import type { Categoria, Ingrediente } from '../types/producto';
+import { transformCloudinaryUrl } from '../../../shared/utils/cloudinary';
 
 export const ProductDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -23,7 +25,7 @@ export const ProductDetailPage: React.FC = () => {
   if (!product) return <ErrorState message="El producto no existe." />;
 
   const outOfStock = !product.disponible || product.stock_cantidad === 0;
-  const hasAllergens = product.ingredientes?.some((i: any) => i.es_alergeno);
+  const hasAllergens = product.ingredientes?.some((i: Ingrediente) => i.es_alergeno);
 
   const handleAddToCart = () => {
     addItem(product, quantity);
@@ -51,7 +53,7 @@ export const ProductDetailPage: React.FC = () => {
             <div className="aspect-square md:aspect-video">
               <img
                 src={
-                  product.imagenes_url?.[0] ||
+                  transformCloudinaryUrl(product.imagenes_url?.[0], 800, 600) ||
                   'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800'
                 }
                 alt={product.nombre}
@@ -84,7 +86,7 @@ export const ProductDetailPage: React.FC = () => {
             {/* Categorías */}
             {product.categorias && product.categorias.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {product.categorias.map((cat: any) => (
+                {product.categorias.map((cat: Categoria) => (
                   <span
                     key={cat.id}
                     className="bg-[#ffe9e4] text-[#b22300] text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full"
@@ -170,7 +172,7 @@ export const ProductDetailPage: React.FC = () => {
                 <h3 className="font-bold text-[#281814] text-lg">Ingredientes</h3>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {product.ingredientes.map((ing: any) => (
+                {product.ingredientes.map((ing: Ingrediente) => (
                   <div
                     key={ing.id}
                     className={`flex flex-col items-center p-4 rounded-xl text-center border transition-all ${
@@ -187,6 +189,11 @@ export const ProductDetailPage: React.FC = () => {
                     <span className="text-[10px] font-black uppercase tracking-widest leading-tight">
                       {ing.nombre}
                     </span>
+                    {ing.cantidad > 0 && (
+                      <span className="text-[9px] font-bold mt-0.5 text-[#5c403a]/70">
+                        {ing.cantidad}{ing.unidad_medida_simbolo ? ` ${ing.unidad_medida_simbolo}` : ''}
+                      </span>
+                    )}
                     {ing.es_alergeno && (
                       <span className="text-[9px] font-bold mt-0.5 opacity-70">Alérgeno</span>
                     )}

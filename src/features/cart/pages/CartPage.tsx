@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useCartStore } from '../store/useCartStore';
-import { ordersService } from '../../orders/services/orders';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, ShoppingBag, ArrowLeft, Minus, Plus, ArrowRight, Info, MapPin, Store, Banknote, Landmark, CreditCard, Wallet } from 'lucide-react';
+import { Trash2, ShoppingBag, ArrowLeft, Minus, Plus, ArrowRight, Info, MapPin, Store, Banknote, Landmark, CreditCard } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { Wallet } from '@mercadopago/sdk-react';
 import { direccionesService } from '../../../shared/services/direcciones';
-import { paymentsService } from '../../payments/services/payments';
+import { createPedido } from '../../../shared/services/pedidos';
+import { crearPago } from '../../../shared/services/pagos';
+import { transformCloudinaryUrl } from '../../../shared/utils/cloudinary';
 
 type FormaPago = 'EFECTIVO' | 'TRANSFERENCIA' | 'MERCADOPAGO';
 
@@ -26,6 +29,8 @@ export const CartPage: React.FC = () => {
   const [modalidadEnvio, setModalidadEnvio] = useState<'RETIRO' | 'ENVIO'>('RETIRO');
   const [direccionId, setDireccionId] = useState<number | null>(null);
   const [formaPago, setFormaPago] = useState<FormaPago>('EFECTIVO');
+  const [showMPBrick, setShowMPBrick] = useState(false);
+  const [mpPreferenceId, setMpPreferenceId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const { data: direcciones } = useQuery({
@@ -63,16 +68,17 @@ export const CartPage: React.FC = () => {
     };
 
     try {
-      const pedido = await ordersService.create(payload);
+      const pedido = await createPedido(payload);
       clear();
 
-      // Para MercadoPago, iniciamos el pago online y redirigimos al checkout.
       if (formaPago === 'MERCADOPAGO') {
-        const pago = await paymentsService.crear(pedido.id);
-        if (pago.init_point) {
-          window.location.href = pago.init_point;
+        const pago = await crearPago(pedido.id);
+        if (pago.preference_id) {
+          setMpPreferenceId(pago.preference_id);
+          setShowMPBrick(true);
           return;
         }
+        toast.error('No se pudo iniciar el pago con MercadoPago. El pedido quedó pendiente.');
         setError('No se pudo iniciar el pago con MercadoPago. El pedido quedó pendiente.');
         navigate('/orders');
         return;
@@ -80,8 +86,15 @@ export const CartPage: React.FC = () => {
 
       // Efectivo / Transferencia: el pedido queda pendiente de confirmación.
       navigate('/orders');
-    } catch (e: any) {
-      setError(e?.response?.data?.detail || e.message || 'No se pudo crear el pedido');
+    } catch (e: unknown) {
+      if (e && typeof e === 'object' && 'response' in e) {
+        const err = e as { response: { data: { detail?: string } } };
+        setError(err.response?.data?.detail || 'No se pudo crear el pedido');
+      } else if (e instanceof Error) {
+        setError(e.message);
+      } else {
+        setError('No se pudo crear el pedido');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -137,7 +150,7 @@ export const CartPage: React.FC = () => {
                   <div className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 bg-[#ffe9e4]">
                     {it.producto.imagenes_url?.[0] ? (
                       <img
-                        src={it.producto.imagenes_url[0]}
+                        src={transformCloudinaryUrl(it.producto.imagenes_url[0], 150, 150)}
                         alt={it.producto.nombre}
                         className="w-full h-full object-cover"
                       />
@@ -282,9 +295,9 @@ export const CartPage: React.FC = () => {
                     </button>
                   ))}
                 </div>
-                {formaPago === 'MERCADOPAGO' && (
+                {formaPago === 'MERCADOPAGO' && !showMPBrick && (
                   <p className="mt-2 text-[11px] text-[#5c403a]">
-                    Vas a ser redirigido a MercadoPago para completar el pago de forma segura.
+                    Pagá de forma segura con MercadoPago.
                   </p>
                 )}
               </div>
@@ -342,6 +355,16 @@ export const CartPage: React.FC = () => {
                   </>
                 )}
               </button>
+
+              {showMPBrick && mpPreferenceId && (
+                <div className="mt-4 p-4 bg-white border border-[#e5beb5] rounded-xl">
+                  <h3 className="font-bold text-[#281814] text-sm mb-3">Pagá con MercadoPago</h3>
+                  <Wallet
+                    initialization={{ preferenceId: mpPreferenceId }}
+                    customization={{ texts: { valueProp: 'smart' } }}
+                  />
+                </div>
+              )}
             </div>
           </aside>
         </div>

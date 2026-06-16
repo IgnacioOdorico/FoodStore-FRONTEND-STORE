@@ -12,12 +12,11 @@ export const Navbar: React.FC = () => {
     <>
       <header
         className="flex justify-between items-center px-5 h-16 w-full fixed top-0 z-50 shadow-sm transition-all duration-200"
-        style={{ backgroundColor: 'var(--color-secondary)' }}
+        style={{ backgroundColor: '#b22300' }}
       >
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/products')}>
           <span
-            className="text-2xl font-black italic uppercase tracking-tighter"
-            style={{ color: 'var(--color-on-secondary)', fontFamily: 'var(--font-headline)' }}
+            className="text-2xl font-black italic uppercase tracking-tighter text-white"
           >
             FOODSTORE
           </span>
@@ -27,7 +26,7 @@ export const Navbar: React.FC = () => {
       <nav
         className="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 h-20 rounded-t-xl md:hidden"
         style={{
-          backgroundColor: 'var(--color-surface-container)',
+          backgroundColor: '#ffe9e4',
           boxShadow: '0 -4px 12px rgba(130,81,58,0.08)',
         }}
       >
@@ -40,8 +39,8 @@ export const Navbar: React.FC = () => {
             }`
           }
           style={({ isActive }) => ({
-            backgroundColor: isActive ? 'var(--color-secondary-container)' : 'transparent',
-            color: isActive ? 'var(--color-on-secondary-container)' : 'var(--color-outline)',
+            backgroundColor: isActive ? '#ffe9e4' : 'transparent',
+            color: isActive ? '#281814' : '#907068',
           })}
         >
           <div className="relative">
@@ -49,7 +48,7 @@ export const Navbar: React.FC = () => {
             {itemCount > 0 && (
               <span
                 className="absolute -top-1 -right-2 text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center"
-                style={{ backgroundColor: 'var(--color-error)', color: 'var(--color-on-error)' }}
+                style={{ backgroundColor: '#ba1a1a', color: '#ffffff' }}
               >
                 {itemCount > 9 ? '9+' : itemCount}
               </span>
@@ -70,8 +69,8 @@ const BottomNavItem: React.FC<{ to: string; icon: string; label: string }> = ({ 
       `flex flex-col items-center justify-center rounded-full px-4 py-2 transition-all duration-150 ${isActive ? 'scale-95' : ''}`
     }
     style={({ isActive }) => ({
-      backgroundColor: isActive ? 'var(--color-secondary-container)' : 'transparent',
-      color: isActive ? 'var(--color-on-secondary-container)' : 'var(--color-outline)',
+      backgroundColor: isActive ? '#ffe9e4' : 'transparent',
+      color: isActive ? '#281814' : '#907068',
       paddingLeft: isActive ? '2rem' : '1rem',
       paddingRight: isActive ? '2rem' : '1rem',
     })}

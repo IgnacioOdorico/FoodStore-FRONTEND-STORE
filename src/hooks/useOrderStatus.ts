@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useWebSocket, WsMessage } from './useWebSocket';
+import { useWebSocket } from './useWebSocket';
+import type { WsMessage } from './useWebSocket';
 import { useWsStore } from '../store/wsStore';
 
 const ORDER_EVENTS = new Set([
@@ -9,31 +10,38 @@ const ORDER_EVENTS = new Set([
   'PEDIDO_EN_CAMINO',
   'PEDIDO_ENTREGADO',
   'PEDIDO_CANCELADO',
-  'WS_RECONNECTED',
 ]);
 
-export function useOrderStatus(orderId?: number) {
+export { type WsMessage };
+
+export function useOrderStatus(onMessage?: (msg: WsMessage) => void) {
   const { disconnect } = useWsStore();
   const queryClient = useQueryClient();
+  const onMessageRef = useRef(onMessage);
+
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+  }, [onMessage]);
 
   const handleMessage = (msg: WsMessage) => {
-    if (msg.event === 'WS_CONNECTED' || msg.event === 'WS_RECONNECTED') {
-      if (orderId) {
-        subscribeToOrder(orderId);
-      }
-      if (msg.event === 'WS_RECONNECTED' && orderId) {
-        queryClient.invalidateQueries({ queryKey: ['order', orderId] });
-        queryClient.invalidateQueries({ queryKey: ['orders'] });
-      }
-    } else if (ORDER_EVENTS.has(msg.event) && orderId) {
-      queryClient.invalidateQueries({ queryKey: ['order', orderId] });
+    onMessageRef.current?.(msg);
+
+    if (msg.event === 'WS_RECONNECTED') {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
+    }
+
+    if (ORDER_EVENTS.has(msg.event)) {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      const payload = msg.data as { id?: number } | null;
+      if (payload?.id) {
+        queryClient.invalidateQueries({ queryKey: ['order', payload.id] });
+      }
     }
   };
 
   const { subscribeToOrder, unsubscribeFromOrder } = useWebSocket({
     onMessage: handleMessage,
-    enabled: !!orderId,
+    enabled: true,
   });
 
   useEffect(() => {

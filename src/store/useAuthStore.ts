@@ -1,13 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { IRole, IUser } from '../shared/types/auth.types';
+import type { IRole, IUser, RegisterData } from '../shared/types/auth.types';
 import { authService } from '../features/auth/services/auth';
 
 interface AuthState {
   user: IUser | null;
   isCheckingAuth: boolean;
   login: (email: string, password: string) => Promise<IUser | null>;
-  register: (data: Record<string, any>) => Promise<IUser | null>;
+  register: (data: RegisterData) => Promise<IUser | null>;
   logout: () => Promise<void>;
   hasRole: (...roles: IRole[]) => boolean;
   checkAuth: () => Promise<void>;
@@ -31,13 +31,9 @@ export const useAuthStore = create<AuthState>()(
       },
 
       register: async (data) => {
-        try {
-          const user = await authService.register(data);
-          set({ user });
-          return user;
-        } catch (e: any) {
-          throw e;
-        }
+        const user = await authService.register(data);
+        set({ user });
+        return user;
       },
 
       logout: async () => {
@@ -56,6 +52,17 @@ export const useAuthStore = create<AuthState>()(
           const user = await authService.me();
           set({ user, isCheckingAuth: false });
         } catch {
+          try {
+            const { attemptRefresh } = await import('../shared/services/api');
+            const refreshed = await attemptRefresh();
+            if (refreshed) {
+              const user = await authService.me();
+              set({ user, isCheckingAuth: false });
+              return;
+            }
+          } catch {
+            /* fallback a logout */
+          }
           set({ user: null, isCheckingAuth: false });
         }
       },

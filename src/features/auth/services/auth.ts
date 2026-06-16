@@ -1,5 +1,6 @@
 import { apiClient } from '../../../shared/services/api';
-import type { IUser } from '../../../shared/types/auth.types';
+import { isAxiosError } from 'axios';
+import type { IUser, RegisterData } from '../../../shared/types/auth.types';
 
 export const authService = {
   login: async (email: string, password: string): Promise<IUser> => {
@@ -23,14 +24,17 @@ export const authService = {
     }
   },
 
-  register: async (data: Record<string, any>): Promise<IUser> => {
+  register: async (data: RegisterData): Promise<IUser> => {
     try {
       // Backend expects UserCreate schema at POST /auth/register
       const res = await apiClient.post<IUser>('/auth/register', data);
       return res.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error en registro:", error);
-      throw new Error(error.response?.data?.detail || 'Error al registrar usuario');
+      if (isAxiosError(error) && error.response?.data?.detail) {
+        throw new Error(error.response.data.detail);
+      }
+      throw new Error('Error al registrar usuario');
     }
   },
 

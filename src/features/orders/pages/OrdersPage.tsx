@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ordersService } from '../services/orders';
-import { paymentsService } from '../../payments/services/payments';
-import { useWebSocket } from '../../../hooks/useWebSocket';
+import { crearPago } from '../../../shared/services/pagos';
+import { useOrderStatus } from '../../../hooks/useOrderStatus';
 import { LoadingState, ErrorState } from '../../../shared/ui/States';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { ShoppingBag, ChevronRight, X, CheckCircle2, Clock, ChefHat, PackageCheck, XCircle, Truck, CreditCard } from 'lucide-react';
 import type { Order, OrderStatus } from '../types/order';
 
@@ -273,7 +274,6 @@ export const OrdersPage: React.FC = () => {
           (o) => !TERMINAL.includes((o as Order).estado_codigo as OrderStatus),
         );
         activos.forEach((o) => subscribeRef.current?.((o as Order).id));
-        queryClient.invalidateQueries({ queryKey: ['orders'] });
         return;
       }
 
@@ -285,10 +285,20 @@ export const OrdersPage: React.FC = () => {
         'PEDIDO_CANCELADO',
       ];
       if (PEDIDO_EVENTS.includes(msg.event)) {
-        queryClient.invalidateQueries({ queryKey: ['orders'] });
+        const payload = msg.data as { id?: number; estado_codigo?: string } | null;
+
+        if (payload?.id && payload.estado_codigo) {
+          queryClient.setQueryData<Order[]>(['orders'], (old) => {
+            if (!old) return old;
+            return old.map((o) =>
+              o.id === payload.id
+                ? { ...o, estado_codigo: payload.estado_codigo as OrderStatus }
+                : o,
+            );
+          });
+        }
 
         // Si el pedido llegó a estado terminal, desuscribirse de su room.
-        const payload = msg.data as { id?: number; estado_codigo?: string } | null;
         if (
           payload?.id &&
           (msg.event === 'PEDIDO_ENTREGADO' || msg.event === 'PEDIDO_CANCELADO')
@@ -300,7 +310,7 @@ export const OrdersPage: React.FC = () => {
     [orders, queryClient],
   );
 
-  const { subscribeToOrder, unsubscribeFromOrder } = useWebSocket({ onMessage: handleMessage });
+  const { subscribeToOrder, unsubscribeFromOrder } = useOrderStatus(handleMessage);
   subscribeRef.current   = subscribeToOrder;
   unsubscribeRef.current = unsubscribeFromOrder;
 
@@ -327,14 +337,21 @@ export const OrdersPage: React.FC = () => {
 
   // Pagar o reintentar un pedido pendiente con MercadoPago.
   const payMutation = useMutation({
-    mutationFn: (id: number) => paymentsService.crear(id),
+    mutationFn: (id: number) => crearPago(id),
     onSuccess: (pago) => {
       if (pago.init_point) {
         window.location.href = pago.init_point;
       }
     },
-    onError: (err: any) => {
-      alert(err.response?.data?.detail || err.message || 'Error al conectar con MercadoPago');
+    onError: (err: unknown) => {
+      if (err && typeof err === 'object' && 'response' in err) {
+        const axiosErr = err as { response: { data: { detail?: string } } };
+        toast.error(axiosErr.response?.data?.detail || 'Error al conectar con MercadoPago');
+      } else if (err instanceof Error) {
+        toast.error(err.message);
+      } else {
+        toast.error('Error al conectar con MercadoPago');
+      }
     }
   });
 

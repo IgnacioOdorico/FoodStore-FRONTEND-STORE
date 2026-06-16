@@ -9,6 +9,7 @@ import { Plus, Eye } from 'lucide-react';
 import type { Producto } from '../types/producto';
 import { useDebounce } from '../../../shared/hooks/useDebounce';
 import { ProductCardSkeleton } from '../components/ProductCardSkeleton';
+import { transformCloudinaryUrl } from '../../../shared/utils/cloudinary';
 
 export const ProductsPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -31,8 +32,8 @@ export const ProductsPage: React.FC = () => {
     queryKey: ['categorias'],
     queryFn: () =>
       apiClient
-        .get<{ id: number; nombre: string }[]>('/categorias/')
-        .then((r) => r.data),
+        .get<{ items: { id: number; nombre: string }[]; total: number }>('/categorias/')
+        .then((r) => r.data.items),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -282,9 +283,7 @@ const ProductCard: React.FC<{
       <div className="relative aspect-square overflow-hidden cursor-pointer" onClick={onView}>
         {p.imagenes_url?.[0] ? (
           <img
-            src={p.imagenes_url[0].includes('/upload/')
-              ? p.imagenes_url[0].replace('/upload/', '/upload/f_auto,q_auto,c_fill,w_400,h_400/')
-              : p.imagenes_url[0]}
+            src={transformCloudinaryUrl(p.imagenes_url[0], 400, 400) || p.imagenes_url[0]}
             alt={p.nombre}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
           />

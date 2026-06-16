@@ -20,7 +20,7 @@ export const ForbiddenPage = () => {
         )}
       </div>
       <button
-        onClick={() => navigate(-1 as any)}
+        onClick={() => navigate(-1)}
         className="flex items-center gap-2 px-6 py-3 border border-[#907068] text-[#281814] font-semibold rounded-lg hover:bg-[#fff0ed] transition-all text-sm"
       >
         <ArrowLeft className="w-4 h-4" />
