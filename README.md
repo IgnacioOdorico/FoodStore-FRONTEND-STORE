@@ -144,5 +144,5 @@ El carrito usa el middleware `persist` de Zustand con `localStorage`. Al recarga
 
 ---
 
-## Video del Parcial
+## Video demo final
 (https://youtu.be/IghWtxwE6Ts)
